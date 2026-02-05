@@ -1,0 +1,37 @@
+{
+  "name": "makalu",
+  "version": "7.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "post-update": "echo \"codesandbox preview only, need an update\" && pnpm update --latest"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "latest",
+    "@mui/material": "^7.3.7",
+    "@mui/material-nextjs": "^7.3.7",
+    "@mui/styled-engine": "^7.3.7",
+    "@mui/x-charts": "^8.27.0",
+    "@mui/x-data-grid": "^8.27.0",
+    "@mui/x-date-pickers": "^8.27.0",
+    "@mui/x-tree-view": "^8.27.0",
+    "@react-spring/web": "^10.0.3",
+    "dayjs": "^1.11.19",
+    "next": "^16.0.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "typescript": "latest"
+  }
+}
