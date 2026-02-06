@@ -18,6 +18,7 @@
     "@mui/styled-engine": "^7.3.7",
     "@mui/x-charts": "^8.27.0",
     "@mui/x-data-grid": "^8.27.0",
+    "@mui/x-data-grid-pro": "^8.27.0",
     "@mui/x-date-pickers": "^8.27.0",
     "@mui/x-tree-view": "^8.27.0",
     "@react-spring/web": "^10.0.3",
