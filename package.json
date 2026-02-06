@@ -21,6 +21,7 @@
     "@mui/x-date-pickers": "^8.27.0",
     "@mui/x-tree-view": "^8.27.0",
     "@react-spring/web": "^10.0.3",
+    "axios": "^1.13.4",
     "dayjs": "^1.11.19",
     "next": "^16.0.7",
     "react": "^19.0.0",

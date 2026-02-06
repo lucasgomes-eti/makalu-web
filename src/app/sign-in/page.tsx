@@ -16,6 +16,13 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../shared-theme/AppTheme';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ErrorResponse } from '../../components/ErrorResponse';
+import { TokenResponse } from '../../components/TokenResponse';
+import { Alert } from '@mui/material';
+import http from '@/components/http';
+import { LoginRequest } from '@/components/LoginRequest';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -60,30 +67,59 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
-  const [emailError, setEmailError] = React.useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [open, setOpen] = React.useState(false);
+  
+  const router = useRouter();
+  
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorMessage, setEmailErrorMessage] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [generalError, setGeneralError] = useState('');
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
     if (emailError || passwordError) {
-      event.preventDefault();
       return;
     }
+
+    setIsLoading(true);
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    const email = data.get('email') as string;
+    const password = data.get('password') as string;
+
+    try {
+
+      const request: LoginRequest = {
+        email: email,
+        password: password,
+      }
+
+      const response = await http.post('/auth/login', request);
+
+      const responseData = await response.data;
+
+      if (!response.status.toString().startsWith('2')) {
+        const error = responseData as ErrorResponse;
+        setGeneralError(`(${error.internal_code}) - ${error.message}`);
+        return;
+      }
+
+      const tokens = responseData as TokenResponse;
+      
+      // Save tokens to localStorage
+      localStorage.setItem('access_token', tokens.access_token);
+      localStorage.setItem('refresh_token', tokens.refresh_token);
+
+      // Optionally, redirect to dashboard or home page
+      router.push('/dashboard');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setGeneralError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateInputs = () => {
@@ -179,8 +215,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               fullWidth
               variant="contained"
               onClick={validateInputs}
+              disabled={isLoading}
             >
-              Sign in
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </Box>
           <Divider>or</Divider>
@@ -196,6 +233,11 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               </Link>
             </Typography>
           </Box>
+          {generalError && 
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {generalError}
+          </Alert>
+          }
         </Card>
       </SignInContainer>
     </AppTheme>
