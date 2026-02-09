@@ -1,23 +1,15 @@
 # Stage 1: Build
 FROM node:22-alpine AS builder
-
 WORKDIR /app
-
-# Copy package files
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 COPY package.json package-lock.json ./
-
-# Install dependencies
 RUN npm ci
-
-# Copy application source
 COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
 # Stage 2: Production runtime
 FROM node:22-alpine
-
 WORKDIR /app
 
 # Install dumb-init to handle signals properly
