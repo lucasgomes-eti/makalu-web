@@ -108,9 +108,17 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
 
       const tokens = responseData as TokenResponse;
       
-      // Save tokens to localStorage
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
+      // Check if remember me checkbox is checked
+      const rememberMe = (data.get('remember') === 'on');
+      
+      // Save tokens to appropriate storage
+      if (rememberMe) {
+        localStorage.setItem('access_token', tokens.access_token);
+        localStorage.setItem('refresh_token', tokens.refresh_token);
+      } else {
+        sessionStorage.setItem('access_token', tokens.access_token);
+        sessionStorage.setItem('refresh_token', tokens.refresh_token);
+      }
 
       // Optionally, redirect to dashboard or home page
       router.push('/dashboard');
@@ -207,7 +215,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               />
             </FormControl>
             <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
+              control={<Checkbox name="remember" color="primary" defaultChecked />}
               label="Remember me"
             />
             <Button

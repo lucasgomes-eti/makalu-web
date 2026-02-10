@@ -5,17 +5,23 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useAuthTokenStatus } from '@/hooks/useAuthTokenStatus';
 
 export default function Home() {
   const router = useRouter();
+  const { hasToken, isLoading } = useAuthTokenStatus();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/sign-in');
-    }, 3000);
+    if (isLoading) {
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [router]);
+    if (hasToken) {
+      router.push('/dashboard');
+    } else {
+      router.push('/sign-in');
+    }
+  }, [isLoading, hasToken, router]);
 
   return (
     <Box
