@@ -8,11 +8,15 @@ import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import CircularProgress from '@mui/material/CircularProgress';
 import AppNavbar from './components/AppNavbar';
 import Header from './components/Header';
 import MainGrid from './components/MainGrid';
 import SideMenu from './components/SideMenu';
 import AppTheme from '../shared-theme/AppTheme';
+import { useAuthTokenStatus } from '@/hooks/useAuthTokenStatus';
 import {
   chartsCustomizations,
   dataGridCustomizations,
@@ -28,6 +32,30 @@ const xThemeComponents = {
 };
 
 export default function Dashboard(props: { disableCustomTheme?: boolean }) {
+  const router = useRouter();
+  const { hasToken, isLoading } = useAuthTokenStatus();
+
+  useEffect(() => {
+    if (!isLoading && !hasToken) {
+      router.push('/sign-in');
+    }
+  }, [isLoading, hasToken, router]);
+
+  if (isLoading || !hasToken) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
