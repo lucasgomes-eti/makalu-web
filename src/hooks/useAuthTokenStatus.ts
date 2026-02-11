@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import installAuth from '@/functions/installAuth';
 
 export const useAuthTokenStatus = (): { hasToken: boolean; isLoading: boolean } => {
   const [hasToken, setHasToken] = useState<boolean>(false);
@@ -12,6 +13,7 @@ export const useAuthTokenStatus = (): { hasToken: boolean; isLoading: boolean } 
     if (accessTokenLocal && refreshTokenLocal) {
       setHasToken(true);
       setIsLoading(false);
+      installAuth(accessTokenLocal);
       return;
     }
 
@@ -22,6 +24,7 @@ export const useAuthTokenStatus = (): { hasToken: boolean; isLoading: boolean } 
     if (accessTokenSession && refreshTokenSession) {
       setHasToken(true);
       setIsLoading(false);
+      installAuth(accessTokenSession);
       return;
     }
 

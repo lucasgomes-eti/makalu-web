@@ -23,6 +23,7 @@ import { TokenResponse } from '../../components/TokenResponse';
 import { Alert } from '@mui/material';
 import http from '@/components/http';
 import { LoginRequest } from '@/components/LoginRequest';
+import installAuth from '@/functions/installAuth';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -119,6 +120,8 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
         sessionStorage.setItem('access_token', tokens.access_token);
         sessionStorage.setItem('refresh_token', tokens.refresh_token);
       }
+
+      installAuth(tokens.access_token);
 
       // Optionally, redirect to dashboard or home page
       router.push('/dashboard');
