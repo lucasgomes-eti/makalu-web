@@ -9,6 +9,16 @@ import SelectContent from './SelectContent';
 import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 import OptionsMenu from './OptionsMenu';
+import { useState, useEffect } from 'react';
+import http from '@/components/http';
+
+interface ProfileResponse {
+  id: number;
+  name: string;
+  email: string;
+  phone_number: string;
+  profile_image_id: number;
+}
 
 const drawerWidth = 240;
 
@@ -24,6 +34,26 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await http.get('/profile');
+        if (response.status === 200) {
+          setProfile(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
   return (
     <Drawer
       variant="permanent"
@@ -67,16 +97,16 @@ export default function SideMenu() {
       >
         <Avatar
           sizes="small"
-          alt="Riley Carter"
-          src="/static/images/avatar/7.jpg"
+          alt={profile?.name || 'User'}
+          src={profile?.profile_image_id ? `${apiBaseUrl}/profile/image/${profile.profile_image_id}` : undefined}
           sx={{ width: 36, height: 36 }}
         />
         <Box sx={{ mr: 'auto' }}>
           <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-            Riley Carter
+            {isLoading ? 'Loading...' : profile?.name || 'Unknown User'}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            riley@email.com
+            {isLoading ? 'Loading...' : profile?.email || 'No email'}
           </Typography>
         </Box>
         <OptionsMenu />
