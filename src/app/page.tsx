@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import { useAuthTokenStatus } from '@/hooks/useAuthTokenStatus';
+import * as React from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import { useAuthTokenStatus } from "@/hooks/useAuthTokenStatus";
 
 export default function Home() {
   const router = useRouter();
@@ -17,19 +17,19 @@ export default function Home() {
     }
 
     if (hasToken) {
-      router.push('/dashboard');
+      router.replace("/dashboard/orders");
     } else {
-      router.push('/sign-in');
+      router.replace("/sign-in");
     }
   }, [isLoading, hasToken, router]);
 
   return (
     <Box
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
       }}
     >
       <CircularProgress />
