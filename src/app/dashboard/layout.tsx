@@ -39,7 +39,10 @@ const menuPages: Record<string, React.ComponentType> = {
   "/dashboard/analytics": Analytics,
 };
 
-function DashboardContent(props: { disableCustomTheme?: boolean }) {
+function DashboardContent(props: {
+  disableCustomTheme?: boolean;
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { hasToken, isLoading } = useAuthTokenStatus();
@@ -102,6 +105,9 @@ function DashboardContent(props: { disableCustomTheme?: boolean }) {
   );
 }
 
-export default function DashboardRoot(props: { disableCustomTheme?: boolean }) {
+export default function DashboardRoot(props: {
+  disableCustomTheme?: boolean;
+  children: React.ReactNode;
+}) {
   return <DashboardContent {...props} />;
 }
