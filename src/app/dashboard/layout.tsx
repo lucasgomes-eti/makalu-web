@@ -15,6 +15,7 @@ import AppNavbar from "./components/AppNavbar";
 import Header from "./components/Header";
 import Orders from "./orders/page";
 import Menu from "./menu/page";
+import NewStore from "./stores/new/page";
 import Analytics from "./analytics/page";
 import SideMenu from "./components/SideMenu";
 import AppTheme from "../shared-theme/AppTheme";
@@ -37,6 +38,7 @@ const menuPages: Record<string, React.ComponentType> = {
   "/dashboard/orders": Orders,
   "/dashboard/menu": Menu,
   "/dashboard/analytics": Analytics,
+  "/dashboard/stores/new": NewStore,
 };
 
 function DashboardContent(props: {

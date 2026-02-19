@@ -12,6 +12,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DevicesRoundedIcon from "@mui/icons-material/DevicesRounded";
 import SmartphoneRoundedIcon from "@mui/icons-material/SmartphoneRounded";
 import ConstructionRoundedIcon from "@mui/icons-material/ConstructionRounded";
+import { useRouter } from "next/navigation";
 
 const Avatar = styled(MuiAvatar)(({ theme }) => ({
   width: 28,
@@ -27,20 +28,21 @@ const ListItemAvatar = styled(MuiListItemAvatar)({
 });
 
 export default function SelectContent() {
-  const [company, setCompany] = React.useState("40");
+  const router = useRouter();
+  const [store, setStore] = React.useState("10");
 
   const handleChange = (event: SelectChangeEvent) => {
-    setCompany(event.target.value as string);
+    setStore(event.target.value as string);
   };
 
   return (
     <Select
-      labelId="company-select"
-      id="company-simple-select"
-      value={company}
+      labelId="store-select"
+      id="store-simple-select"
+      value={store}
       onChange={handleChange}
       displayEmpty
-      inputProps={{ "aria-label": "Select company" }}
+      inputProps={{ "aria-label": "Select store" }}
       fullWidth
       sx={{
         maxHeight: 56,
@@ -91,11 +93,19 @@ export default function SelectContent() {
         <ListItemText primary="Sitemark-Admin" secondary="Web app" />
       </MenuItem>
       <Divider sx={{ mx: -1 }} /> */}
-      <MenuItem value={40}>
+      <MenuItem value={10} onClick={() => router.push("/dashboard/stores/new")}>
         <ListItemIcon>
           <AddRoundedIcon />
         </ListItemIcon>
         <ListItemText primary="Add store" />
+      </MenuItem>
+      <MenuItem value={20}>
+        <ListItemAvatar>
+          <Avatar alt="Sitemark Store">
+            <DevicesRoundedIcon sx={{ fontSize: "1rem" }} />
+          </Avatar>
+        </ListItemAvatar>
+        <ListItemText primary="Sitemark-Store" secondary="Web app" />
       </MenuItem>
     </Select>
   );
