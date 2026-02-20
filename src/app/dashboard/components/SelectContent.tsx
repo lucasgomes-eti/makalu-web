@@ -8,11 +8,19 @@ import ListSubheader from "@mui/material/ListSubheader";
 import Select, { SelectChangeEvent, selectClasses } from "@mui/material/Select";
 import Divider from "@mui/material/Divider";
 import { styled } from "@mui/material/styles";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import DevicesRoundedIcon from "@mui/icons-material/DevicesRounded";
-import SmartphoneRoundedIcon from "@mui/icons-material/SmartphoneRounded";
-import ConstructionRoundedIcon from "@mui/icons-material/ConstructionRounded";
+import AddBusinessIcon from "@mui/icons-material/AddBusiness";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import http from "@/components/http";
+
+interface Store {
+  id: number;
+  name: string;
+  categories: any[];
+  logo_image_id: number | null;
+  cover_image_id: number | null;
+}
 
 const Avatar = styled(MuiAvatar)(({ theme }) => ({
   width: 28,
@@ -29,7 +37,29 @@ const ListItemAvatar = styled(MuiListItemAvatar)({
 
 export default function SelectContent() {
   const router = useRouter();
-  const [store, setStore] = React.useState("10");
+  const [stores, setStores] = useState<Store[]>([]);
+  const [store, setStore] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await http.get("/stores");
+        if (response.status === 200) {
+          setStores(response.data);
+          if (response.data.length > 0) {
+            setStore(response.data[0].id.toString());
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch stores:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const handleChange = (event: SelectChangeEvent) => {
     setStore(event.target.value as string);
@@ -58,54 +88,34 @@ export default function SelectContent() {
         },
       }}
     >
+      <MenuItem value="" disabled>
+        Select a store
+      </MenuItem>
       <ListSubheader sx={{ pt: 0 }}>Stores</ListSubheader>
-      {/* <MenuItem value="">
-        <ListItemAvatar>
-          <Avatar alt="Sitemark web">
-            <DevicesRoundedIcon sx={{ fontSize: "1rem" }} />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary="Sitemark-web" secondary="Web app" />
-      </MenuItem>
-      <MenuItem value={10}>
-        <ListItemAvatar>
-          <Avatar alt="Sitemark App">
-            <SmartphoneRoundedIcon sx={{ fontSize: "1rem" }} />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary="Sitemark-app" secondary="Mobile application" />
-      </MenuItem>
-      <MenuItem value={20}>
-        <ListItemAvatar>
-          <Avatar alt="Sitemark Store">
-            <DevicesRoundedIcon sx={{ fontSize: "1rem" }} />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary="Sitemark-Store" secondary="Web app" />
-      </MenuItem>
-      <ListSubheader>Development</ListSubheader>
-      <MenuItem value={30}>
-        <ListItemAvatar>
-          <Avatar alt="Sitemark Store">
-            <ConstructionRoundedIcon sx={{ fontSize: "1rem" }} />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary="Sitemark-Admin" secondary="Web app" />
-      </MenuItem>
-      <Divider sx={{ mx: -1 }} /> */}
-      <MenuItem value={10} onClick={() => router.push("/dashboard/stores/new")}>
+      {stores.map((storeItem) => (
+        <MenuItem key={storeItem.id} value={storeItem.id.toString()}>
+          <ListItemAvatar>
+            <Avatar alt={storeItem.name}>
+              {storeItem.logo_image_id ? (
+                <img
+                  src={`/stores/image/${storeItem.logo_image_id}`}
+                  alt={storeItem.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <StorefrontIcon sx={{ fontSize: "1rem" }} />
+              )}
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary={storeItem.name} />
+        </MenuItem>
+      ))}
+      <Divider sx={{ mx: -1 }} />
+      <MenuItem onClick={() => router.push("/dashboard/stores/new")}>
         <ListItemIcon>
-          <AddRoundedIcon />
+          <AddBusinessIcon />
         </ListItemIcon>
         <ListItemText primary="Add store" />
-      </MenuItem>
-      <MenuItem value={20}>
-        <ListItemAvatar>
-          <Avatar alt="Sitemark Store">
-            <DevicesRoundedIcon sx={{ fontSize: "1rem" }} />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary="Sitemark-Store" secondary="Web app" />
       </MenuItem>
     </Select>
   );
