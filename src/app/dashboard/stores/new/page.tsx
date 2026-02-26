@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import http from "@/components/http";
 import { useState } from "react";
 import UploadLogoImage from "./UploadLogoImage";
+import UploadCoverImage from "./UploadCoverImage";
 import eventBus from "@/functions/eventBus";
 
 interface Category {
@@ -45,6 +46,8 @@ export default function NewStore() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const [coverFile, setCoverFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -97,8 +100,7 @@ export default function NewStore() {
             );
 
             if (uploadResponse.status === 200) {
-              eventBus.emit("storeCreated", response.data);
-              router.back();
+              console.log("Logo uploaded successfully");
             }
           } catch (uploadErr: any) {
             console.error("Failed to upload logo:", uploadErr);
@@ -106,13 +108,39 @@ export default function NewStore() {
               uploadErr.response?.data?.message ||
                 "Failed to upload logo image",
             );
-            eventBus.emit("storeCreated", response.data);
-            router.back();
           }
-        } else {
-          eventBus.emit("storeCreated", response.data);
-          router.back();
         }
+
+        // Upload cover image if selected
+        if (coverFile) {
+          try {
+            const formData = new FormData();
+            formData.append("file", coverFile);
+
+            const uploadResponse = await http.post(
+              `/stores/${storeId}/upload-cover-image`,
+              formData,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              },
+            );
+
+            if (uploadResponse.status === 200) {
+              console.log("Cover uploaded successfully");
+            }
+          } catch (uploadErr: any) {
+            console.error("Failed to upload cover:", uploadErr);
+            setUploadError(
+              uploadErr.response?.data?.message ||
+                "Failed to upload cover image",
+            );
+          }
+        }
+
+        eventBus.emit("storeCreated", response.data);
+        router.back();
       }
     } catch (error: any) {
       console.error("Failed to create store:", error);
@@ -146,6 +174,9 @@ export default function NewStore() {
         <Stack>
           <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
             <UploadLogoImage onFileChange={setLogoFile} />
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <UploadCoverImage onFileChange={setCoverFile} />
           </Box>
           <TextField
             value={storeName}
