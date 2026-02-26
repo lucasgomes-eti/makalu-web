@@ -24,6 +24,8 @@ import type { StoreRequest } from "../StoreRequest";
 import { useRouter } from "next/navigation";
 import http from "@/components/http";
 import { useState } from "react";
+import UploadLogoImage from "./UploadLogoImage";
+import eventBus from "@/functions/eventBus";
 
 interface Category {
   id: number;
@@ -40,6 +42,9 @@ export default function NewStore() {
 
   const [categoriesIds, setCategoriesIds] = useState<number[]>([]);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +70,7 @@ export default function NewStore() {
     // Clear previous errors
     setStoreNameError(null);
     setCategoriesError(null);
+    setUploadError(null);
 
     try {
       const response = await http.post("/stores", {
@@ -72,22 +78,58 @@ export default function NewStore() {
         categories_ids: categoriesIds,
       });
       if (response.status === 201) {
-        router.back();
+        const storeId = response.data.id;
+
+        // Upload logo image if selected
+        if (logoFile) {
+          try {
+            const formData = new FormData();
+            formData.append("file", logoFile);
+
+            const uploadResponse = await http.post(
+              `/stores/${storeId}/upload-logo-image`,
+              formData,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              },
+            );
+
+            if (uploadResponse.status === 200) {
+              eventBus.emit("storeCreated", response.data);
+              router.back();
+            }
+          } catch (uploadErr: any) {
+            console.error("Failed to upload logo:", uploadErr);
+            setUploadError(
+              uploadErr.response?.data?.message ||
+                "Failed to upload logo image",
+            );
+            eventBus.emit("storeCreated", response.data);
+            router.back();
+          }
+        } else {
+          eventBus.emit("storeCreated", response.data);
+          router.back();
+        }
       }
     } catch (error: any) {
       console.error("Failed to create store:", error);
-      
+
       // Parse validation errors from the response
       if (error.response?.data?.field_errors) {
         const fieldErrors = error.response.data.field_errors;
-        
-        fieldErrors.forEach((fieldError: { field: string; message: string }) => {
-          if (fieldError.field === "name") {
-            setStoreNameError(fieldError.message);
-          } else if (fieldError.field === "categoriesIds") {
-            setCategoriesError(fieldError.message);
-          }
-        });
+
+        fieldErrors.forEach(
+          (fieldError: { field: string; message: string }) => {
+            if (fieldError.field === "name") {
+              setStoreNameError(fieldError.message);
+            } else if (fieldError.field === "categoriesIds") {
+              setCategoriesError(fieldError.message);
+            }
+          },
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -102,6 +144,9 @@ export default function NewStore() {
     <Box component="form" noValidate autoComplete="off" sx={{ width: "100%" }}>
       <FormGroup>
         <Stack>
+          <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
+            <UploadLogoImage onFileChange={setLogoFile} />
+          </Box>
           <TextField
             value={storeName}
             onChange={(event) => setStoreName(event.target.value)}

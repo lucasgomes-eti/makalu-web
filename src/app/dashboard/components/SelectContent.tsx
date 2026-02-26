@@ -13,6 +13,7 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import http from "@/components/http";
+import eventBus from "@/functions/eventBus";
 
 interface Store {
   id: number;
@@ -41,25 +42,43 @@ export default function SelectContent() {
   const [store, setStore] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const response = await http.get("/stores");
-        if (response.status === 200) {
-          setStores(response.data);
-          if (response.data.length > 0) {
-            setStore(response.data[0].id.toString());
-          }
+  const fetchStores = async () => {
+    try {
+      const response = await http.get("/stores");
+      if (response.status === 200) {
+        setStores(response.data);
+        if (response.data.length > 0) {
+          setStore(response.data[0].id.toString());
         }
-      } catch (error) {
-        console.error("Failed to fetch stores:", error);
-      } finally {
-        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stores:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "storeCreated" && e.newValue === "true") {
+        fetchStores();
+        localStorage.removeItem("storeCreated");
       }
     };
 
-    fetchStores();
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
+  const onStoreCreated = () => {
+    fetchStores();
+  };
+
+  eventBus.on("storeCreated", onStoreCreated);
 
   const handleChange = (event: SelectChangeEvent) => {
     setStore(event.target.value as string);
@@ -98,7 +117,7 @@ export default function SelectContent() {
             <Avatar alt={storeItem.name}>
               {storeItem.logo_image_id ? (
                 <img
-                  src={`/stores/image/${storeItem.logo_image_id}`}
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/logo-image/${storeItem.logo_image_id}`}
                   alt={storeItem.name}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
