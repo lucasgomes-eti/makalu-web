@@ -64,12 +64,7 @@ export default function UploadCoverImage({
   };
 
   return (
-    <CoverContainer
-      component="label"
-      role={undefined}
-      tabIndex={-1}
-      aria-label="Cover image"
-    >
+    <CoverContainer role={undefined} tabIndex={-1} aria-label="Cover image">
       {coverSrc ? (
         <CoverImage src={coverSrc} alt="Store cover" />
       ) : (
