@@ -4,15 +4,13 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import CircularProgress from "@mui/material/CircularProgress";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
-import {
-  GoogleMap,
-  LoadScript,
-  Marker,
-  Autocomplete,
-} from "@react-google-maps/api";
+import SearchIcon from "@mui/icons-material/Search";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
 interface LocationPickerProps {
   onLocationChange: (latitude: number, longitude: number) => void;
@@ -40,34 +38,49 @@ export default function LocationPicker({
 }: LocationPickerProps) {
   const [latitude, setLatitude] = React.useState<number>(defaultCenter.lat);
   const [longitude, setLongitude] = React.useState<number>(defaultCenter.lng);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const autocompleteRef = React.useRef<google.maps.places.Autocomplete | null>(
-    null,
-  );
+  const [inputValue, setInputValue] = React.useState("");
+  const [isSearching, setIsSearching] = React.useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  const handlePlaceSelected = React.useCallback(() => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
+  const handleSearchAddress = React.useCallback(() => {
+    if (!inputValue.trim()) return;
 
-      if (place && place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
+    setIsSearching(true);
 
-        setLatitude(lat);
-        setLongitude(lng);
-        onLocationChange(lat, lng);
-        onAddressChange(place.formatted_address || "");
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode(
+      { address: inputValue, componentRestrictions: { country: "br" } },
+      (results: google.maps.GeocoderResult[], status: string) => {
+        if (status === "OK" && results[0] && results[0].geometry.location) {
+          const lat = results[0].geometry.location.lat();
+          const lng = results[0].geometry.location.lng();
 
-        // Move map to selected location
-        if (mapRef.current) {
-          mapRef.current.panTo({ lat, lng });
-          mapRef.current.setZoom(15);
+          setLatitude(lat);
+          setLongitude(lng);
+          onLocationChange(lat, lng);
+          onAddressChange(results[0].formatted_address);
+
+          // Move map to selected location
+          if (mapRef.current) {
+            mapRef.current.panTo({ lat, lng });
+            mapRef.current.setZoom(15);
+          }
         }
+        setIsSearching(false);
+      },
+    );
+  }, [inputValue, onLocationChange, onAddressChange]);
+
+  const handleKeyPress = React.useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSearchAddress();
       }
-    }
-  }, [onLocationChange, onAddressChange]);
+    },
+    [handleSearchAddress],
+  );
 
   const handleMapClick = React.useCallback(
     (event: google.maps.MapMouseEvent) => {
@@ -85,7 +98,9 @@ export default function LocationPicker({
           { location: { lat, lng } },
           (results: google.maps.GeocoderResult[], status: string) => {
             if (status === "OK" && results[0]) {
-              onAddressChange(results[0].formatted_address);
+              const formattedAddress = results[0].formatted_address;
+              setInputValue(formattedAddress);
+              onAddressChange(formattedAddress);
             }
           },
         );
@@ -113,28 +128,27 @@ export default function LocationPicker({
     <LoadScript googleMapsApiKey={apiKey} libraries={["places"]}>
       <FormControl fullWidth error={!!error}>
         <Box sx={{ mb: 2 }}>
-          <Autocomplete
-            onLoad={(autocomplete) => {
-              autocompleteRef.current = autocomplete;
-            }}
-            onPlaceChanged={handlePlaceSelected}
-            options={{
-              types: ["address"],
-              componentRestrictions: { country: "br" },
-            }}
-          >
+          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
             <TextField
               fullWidth
               label="Endereço"
               placeholder="Digite o endereço da loja"
-              value={address}
-              onChange={(event) => onAddressChange(event.target.value)}
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyPress={handleKeyPress}
               error={!!error}
               helperText={error ?? " "}
-              disabled={isLoading}
+              disabled={isSearching}
               autoComplete="off"
             />
-          </Autocomplete>
+            <IconButton
+              onClick={handleSearchAddress}
+              disabled={isSearching || !inputValue.trim()}
+              sx={{ mt: 0.5 }}
+            >
+              {isSearching ? <CircularProgress size={24} /> : <SearchIcon />}
+            </IconButton>
+          </Box>
         </Box>
 
         <Box sx={{ position: "relative", mb: 2 }}>
@@ -166,7 +180,9 @@ export default function LocationPicker({
                     { location: { lat, lng } },
                     (results: google.maps.GeocoderResult[], status: string) => {
                       if (status === "OK" && results[0]) {
-                        onAddressChange(results[0].formatted_address);
+                        const formattedAddress = results[0].formatted_address;
+                        setInputValue(formattedAddress);
+                        onAddressChange(formattedAddress);
                       }
                     },
                   );
