@@ -50,6 +50,7 @@ export default function UploadCoverImage({
   onFileChange,
 }: UploadCoverImageProps) {
   const [coverSrc, setCoverSrc] = React.useState<string | undefined>(undefined);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCoverChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -63,8 +64,17 @@ export default function UploadCoverImage({
     }
   };
 
+  const handleButtonClick = () => {
+    inputRef.current?.click();
+  };
+
   return (
-    <CoverContainer role={undefined} tabIndex={-1} aria-label="Cover image">
+    <CoverContainer
+      role={undefined}
+      tabIndex={-1}
+      aria-label="Cover image"
+      onClick={handleButtonClick}
+    >
       {coverSrc ? (
         <CoverImage src={coverSrc} alt="Store cover" />
       ) : (
@@ -74,6 +84,7 @@ export default function UploadCoverImage({
         </UploadPlaceholder>
       )}
       <input
+        ref={inputRef}
         type="file"
         accept="image/*"
         style={{

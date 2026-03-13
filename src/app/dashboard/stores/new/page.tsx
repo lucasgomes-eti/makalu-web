@@ -26,6 +26,7 @@ import http from "@/components/http";
 import { useState } from "react";
 import UploadLogoImage from "./UploadLogoImage";
 import UploadCoverImage from "./UploadCoverImage";
+import LocationPicker from "./LocationPicker";
 import eventBus from "@/functions/eventBus";
 
 interface Category {
@@ -48,6 +49,11 @@ export default function NewStore() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
+
+  const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,11 +80,21 @@ export default function NewStore() {
     setStoreNameError(null);
     setCategoriesError(null);
     setUploadError(null);
+    setLocationError(null);
+
+    // Validate location
+    if (latitude === null || longitude === null) {
+      setLocationError("Por favor, selecione uma localização no mapa");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await http.post("/stores", {
         name: storeName,
         categories_ids: categoriesIds,
+        latitude,
+        longitude,
       });
       if (response.status === 201) {
         const storeId = response.data.id;
@@ -177,6 +193,17 @@ export default function NewStore() {
           </Box>
           <Box sx={{ mb: 2 }}>
             <UploadCoverImage onFileChange={setCoverFile} />
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <LocationPicker
+              onLocationChange={(lat, lng) => {
+                setLatitude(lat);
+                setLongitude(lng);
+              }}
+              address={address}
+              onAddressChange={setAddress}
+              error={locationError}
+            />
           </Box>
           <TextField
             value={storeName}
