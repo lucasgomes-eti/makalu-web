@@ -55,7 +55,7 @@ export default function SelectContent() {
 
   const fetchStores = async () => {
     try {
-      const response = await http.get("/stores");
+      const response = await http.get("/stores/owned");
       if (response.status === 200) {
         setStores(response.data);
         if (response.data.length > 0) {
