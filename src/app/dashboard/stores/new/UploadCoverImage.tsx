@@ -6,6 +6,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 interface UploadCoverImageProps {
   onFileChange: (file: File | null) => void;
+  imageId?: number | null;
 }
 
 const CoverContainer = styled(ButtonBase)(({ theme }) => ({
@@ -48,8 +49,13 @@ const UploadPlaceholder = styled(Box)(({ theme }) => ({
 
 export default function UploadCoverImage({
   onFileChange,
+  imageId,
 }: UploadCoverImageProps) {
-  const [coverSrc, setCoverSrc] = React.useState<string | undefined>(undefined);
+  const [coverSrc, setCoverSrc] = React.useState<string | undefined>(
+    imageId
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/cover-image/${imageId}`
+      : undefined,
+  );
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCoverChange = (event: React.ChangeEvent<HTMLInputElement>) => {

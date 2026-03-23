@@ -17,6 +17,8 @@ interface LocationPickerProps {
   address: string;
   onAddressChange: (address: string) => void;
   error?: string | null;
+  initialLatitude?: number;
+  initialLongitude?: number;
 }
 
 const mapContainerStyle = {
@@ -35,9 +37,15 @@ export default function LocationPicker({
   address,
   onAddressChange,
   error,
+  initialLatitude,
+  initialLongitude,
 }: LocationPickerProps) {
-  const [latitude, setLatitude] = React.useState<number>(defaultCenter.lat);
-  const [longitude, setLongitude] = React.useState<number>(defaultCenter.lng);
+  const [latitude, setLatitude] = React.useState<number>(
+    initialLatitude ?? defaultCenter.lat,
+  );
+  const [longitude, setLongitude] = React.useState<number>(
+    initialLongitude ?? defaultCenter.lng,
+  );
   const [inputValue, setInputValue] = React.useState("");
   const [isSearching, setIsSearching] = React.useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
@@ -51,8 +59,8 @@ export default function LocationPicker({
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode(
       { address: inputValue, componentRestrictions: { country: "br" } },
-      (results: google.maps.GeocoderResult[], status: string) => {
-        if (status === "OK" && results[0] && results[0].geometry.location) {
+      (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+        if (status === "OK" && results && results[0] && results[0].geometry.location) {
           const lat = results[0].geometry.location.lat();
           const lng = results[0].geometry.location.lng();
 
@@ -96,8 +104,8 @@ export default function LocationPicker({
         const geocoder = new google.maps.Geocoder();
         geocoder.geocode(
           { location: { lat, lng } },
-          (results: google.maps.GeocoderResult[], status: string) => {
-            if (status === "OK" && results[0]) {
+          (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+            if (status === "OK" && results && results[0]) {
               const formattedAddress = results[0].formatted_address;
               setInputValue(formattedAddress);
               onAddressChange(formattedAddress);
@@ -178,8 +186,8 @@ export default function LocationPicker({
                   const geocoder = new google.maps.Geocoder();
                   geocoder.geocode(
                     { location: { lat, lng } },
-                    (results: google.maps.GeocoderResult[], status: string) => {
-                      if (status === "OK" && results[0]) {
+                    (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                      if (status === "OK" && results && results[0]) {
                         const formattedAddress = results[0].formatted_address;
                         setInputValue(formattedAddress);
                         onAddressChange(formattedAddress);

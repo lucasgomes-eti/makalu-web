@@ -11,14 +11,6 @@ import Stack from "@mui/material/Stack";
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import CircularProgress from "@mui/material/CircularProgress";
-import AppNavbar from "./components/AppNavbar";
-import Header from "./components/Header";
-import Orders from "./orders/page";
-import Menu from "./menu/page";
-import NewStore from "./stores/new/page";
-import Analytics from "./analytics/page";
-import SideMenu from "./components/SideMenu";
-import AppTheme from "../shared-theme/AppTheme";
 import { useAuthTokenStatus } from "@/hooks/useAuthTokenStatus";
 import {
   chartsCustomizations,
@@ -26,6 +18,14 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from "./theme/customizations";
+import AppNavbar from "./components/AppNavbar";
+import Header from "./components/Header";
+import Orders from "./orders/page";
+import Menu from "./menu/page";
+import Analytics from "./analytics/page";
+import SideMenu from "./components/SideMenu";
+import AppTheme from "../shared-theme/AppTheme";
+import StoreDetail from "./stores/components/StoreDetail";
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -38,7 +38,6 @@ const menuPages: Record<string, React.ComponentType> = {
   "/dashboard/orders": Orders,
   "/dashboard/menu": Menu,
   "/dashboard/analytics": Analytics,
-  "/dashboard/stores/new": NewStore,
 };
 
 function DashboardContent(props: {
@@ -70,7 +69,20 @@ function DashboardContent(props: {
     );
   }
 
-  const CurrentPage = menuPages[pathname] || Orders;
+  // Don't render CurrentPage for store routes - they have their own page.tsx
+  const shouldRenderMenuPage =
+    !pathname.startsWith("/dashboard/stores/") &&
+    pathname.startsWith("/dashboard");
+
+  const CurrentPage = shouldRenderMenuPage
+    ? menuPages[pathname] || Orders
+    : null;
+
+  // Check if it's a store route and extract storeId if it's an edit route
+  const isStoreRoute = pathname.startsWith("/dashboard/stores/");
+  const isNewStoreRoute = pathname === "/dashboard/stores/new";
+  const storeIdMatch = pathname.match(/^\/dashboard\/stores\/(\d+)$/);
+  const storeId = storeIdMatch ? storeIdMatch[1] : null;
 
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
@@ -99,7 +111,11 @@ function DashboardContent(props: {
             }}
           >
             <Header />
-            <CurrentPage />
+            {isStoreRoute ? (
+              <StoreDetail storeId={storeId || undefined} />
+            ) : CurrentPage ? (
+              <CurrentPage />
+            ) : null}
           </Stack>
         </Box>
       </Box>

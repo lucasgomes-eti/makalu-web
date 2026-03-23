@@ -4,13 +4,17 @@ import ButtonBase from "@mui/material/ButtonBase";
 
 interface UploadLogoImageProps {
   onFileChange: (file: File | null) => void;
+  imageId?: number | null;
 }
 
 export default function UploadLogoImage({
   onFileChange,
+  imageId,
 }: UploadLogoImageProps) {
   const [avatarSrc, setAvatarSrc] = React.useState<string | undefined>(
-    undefined,
+    imageId
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/logo-image/${imageId}`
+      : undefined,
   );
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
