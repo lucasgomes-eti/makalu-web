@@ -158,6 +158,8 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
         categories_ids: categoriesIds,
         latitude,
         longitude,
+        logo_image_id: logoId,
+        cover_image_id: coverId,
       };
 
       let response;
@@ -168,7 +170,7 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
       }
 
       if (
-        (isEdit && response.status === 200) ||
+        (isEdit && response.status === 204) ||
         (!isEdit && response.status === 201)
       ) {
         const currentStoreId = isEdit ? storeId : response.data.id;

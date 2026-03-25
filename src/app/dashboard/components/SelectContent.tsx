@@ -26,6 +26,8 @@ interface Store {
   cover_image_id: number | null;
 }
 
+const SESSION_STORAGE_KEY = "selectedStoreId";
+
 const Avatar = styled(MuiAvatar)(({ theme }) => ({
   width: 28,
   height: 28,
@@ -58,8 +60,25 @@ export default function SelectContent() {
       const response = await http.get("/stores/owned");
       if (response.status === 200) {
         setStores(response.data);
-        if (response.data.length > 0) {
-          setStore(response.data[0].id.toString());
+
+        // Determine default store
+        const savedStoreId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        let defaultStore = "";
+
+        if (
+          savedStoreId &&
+          response.data.some((s: Store) => s.id.toString() === savedStoreId)
+        ) {
+          // Use saved store if it exists in the list
+          defaultStore = savedStoreId;
+        } else if (response.data.length > 0) {
+          // Use first store if no saved store or saved store not found
+          defaultStore = response.data[0].id.toString();
+        }
+
+        if (defaultStore) {
+          setStore(defaultStore);
+          sessionStorage.setItem(SESSION_STORAGE_KEY, defaultStore);
         }
       }
     } catch (error) {
@@ -74,30 +93,32 @@ export default function SelectContent() {
   }, []);
 
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "storeCreated" && e.newValue === "true") {
-        fetchStores();
-        localStorage.removeItem("storeCreated");
-      }
+    const onStoreCreated = () => {
+      fetchStores();
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    const onStoreUpdated = () => {
+      fetchStores();
+    };
+
+    eventBus.on("storeCreated", onStoreCreated);
+    eventBus.on("storeUpdated", onStoreUpdated);
+
+    return () => {
+      eventBus.off("storeCreated", onStoreCreated);
+      eventBus.off("storeUpdated", onStoreUpdated);
+    };
   }, []);
 
-  const onStoreCreated = () => {
-    fetchStores();
-  };
-
-  const onStoreUpdated = () => {
-    fetchStores();
-  };
-
-  eventBus.on("storeCreated", onStoreCreated);
-  eventBus.on("storeUpdated", onStoreUpdated);
-
   const handleChange = (event: SelectChangeEvent) => {
-    setStore(event.target.value as string);
+    const selectedValue = event.target.value as string;
+    setStore(selectedValue);
+
+    if (selectedValue) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, selectedValue);
+      eventBus.emit("storeSelected", parseInt(selectedValue));
+      console.log("Selected store ID:", selectedValue);
+    }
   };
 
   const handleEditStore = (e: React.MouseEvent, storeId: number) => {

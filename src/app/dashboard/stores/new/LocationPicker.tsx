@@ -50,6 +50,7 @@ export default function LocationPicker({
   const [isSearching, setIsSearching] = React.useState(false);
   const mapRef = React.useRef<google.maps.Map | null>(null);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [scriptLoaded, setScriptLoaded] = React.useState(false);
 
   const handleSearchAddress = React.useCallback(() => {
     if (!inputValue.trim()) return;
@@ -59,8 +60,16 @@ export default function LocationPicker({
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode(
       { address: inputValue, componentRestrictions: { country: "br" } },
-      (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-        if (status === "OK" && results && results[0] && results[0].geometry.location) {
+      (
+        results: google.maps.GeocoderResult[] | null,
+        status: google.maps.GeocoderStatus,
+      ) => {
+        if (
+          status === "OK" &&
+          results &&
+          results[0] &&
+          results[0].geometry.location
+        ) {
           const lat = results[0].geometry.location.lat();
           const lng = results[0].geometry.location.lng();
 
@@ -104,7 +113,10 @@ export default function LocationPicker({
         const geocoder = new google.maps.Geocoder();
         geocoder.geocode(
           { location: { lat, lng } },
-          (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+          (
+            results: google.maps.GeocoderResult[] | null,
+            status: google.maps.GeocoderStatus,
+          ) => {
             if (status === "OK" && results && results[0]) {
               const formattedAddress = results[0].formatted_address;
               setInputValue(formattedAddress);
@@ -121,6 +133,16 @@ export default function LocationPicker({
     mapRef.current = map;
   }, []);
 
+  // Suppress the "Google Maps API is already loaded" error
+  React.useEffect(() => {
+    const script = document.querySelector(
+      'script[src*="maps.googleapis.com"]',
+    ) as HTMLScriptElement | null;
+    if (script) {
+      script.onerror = null;
+    }
+  }, []);
+
   if (!apiKey) {
     return (
       <FormControl fullWidth error>
@@ -133,7 +155,18 @@ export default function LocationPicker({
   }
 
   return (
-    <LoadScript googleMapsApiKey={apiKey} libraries={["places"]}>
+    <LoadScript
+      googleMapsApiKey={apiKey}
+      libraries={["places"]}
+      onLoad={() => setScriptLoaded(true)}
+      onError={() => {
+        setScriptLoaded(true);
+        console.warn(
+          "Google Maps script already loaded or error loading script.",
+        );
+      }}
+      id="google-map-script"
+    >
       <FormControl fullWidth error={!!error}>
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
@@ -186,7 +219,10 @@ export default function LocationPicker({
                   const geocoder = new google.maps.Geocoder();
                   geocoder.geocode(
                     { location: { lat, lng } },
-                    (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                    (
+                      results: google.maps.GeocoderResult[] | null,
+                      status: google.maps.GeocoderStatus,
+                    ) => {
                       if (status === "OK" && results && results[0]) {
                         const formattedAddress = results[0].formatted_address;
                         setInputValue(formattedAddress);
