@@ -26,6 +26,8 @@ import Analytics from "./analytics/page";
 import SideMenu from "./components/SideMenu";
 import AppTheme from "../shared-theme/AppTheme";
 import StoreDetail from "./stores/components/StoreDetail";
+import NewMenuItem from "./menu/new/page";
+import EditMenuItem from "./menu/[menuItemId]/page";
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -38,6 +40,8 @@ const menuPages: Record<string, React.ComponentType> = {
   "/dashboard/orders": Orders,
   "/dashboard/menu": Menu,
   "/dashboard/analytics": Analytics,
+  "/dashboard/menu/new": NewMenuItem,
+  "/dashboard/menu/[menuItemId]": EditMenuItem,
 };
 
 function DashboardContent(props: {
@@ -74,9 +78,26 @@ function DashboardContent(props: {
     !pathname.startsWith("/dashboard/stores/") &&
     pathname.startsWith("/dashboard");
 
-  const CurrentPage = shouldRenderMenuPage
-    ? menuPages[pathname] || Orders
-    : null;
+  // Helper function to match dynamic routes
+  const getMatchingPage = () => {
+    if (!shouldRenderMenuPage) return null;
+    
+    // First try exact match
+    if (menuPages[pathname]) {
+      return menuPages[pathname];
+    }
+    
+    // Check for dynamic menu item route: /dashboard/menu/:id (but not /dashboard/menu/new)
+    const menuItemMatch = pathname.match(/^\/dashboard\/menu\/(\d+)$/);
+    if (menuItemMatch && pathname !== "/dashboard/menu/new") {
+      return EditMenuItem;
+    }
+    
+    // Default fallback
+    return Orders;
+  };
+
+  const CurrentPage = getMatchingPage();
 
   // Check if it's a store route and extract storeId if it's an edit route
   const isStoreRoute = pathname.startsWith("/dashboard/stores/");
