@@ -68,6 +68,9 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  const [deliveryFee, setDeliveryFee] = useState<number | string>("");
+  const [deliveryFeeError, setDeliveryFeeError] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch store data (only in edit mode)
@@ -88,6 +91,7 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
           setAddress(""); // Will be fetched via reverse geocoding
           setLogoId(storeData.logo_image_id);
           setCoverId(storeData.cover_image_id);
+          setDeliveryFee(storeData.delivery_fee ?? "");
         }
       } catch (error) {
         console.error("Failed to fetch store:", error);
@@ -144,10 +148,18 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
     setCategoriesError(null);
     setUploadError(null);
     setLocationError(null);
+    setDeliveryFeeError(null);
 
     // Validate location
     if (latitude === null || longitude === null) {
       setLocationError("Por favor, selecione uma localização no mapa");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate delivery fee
+    if (!deliveryFee || parseFloat(String(deliveryFee)) <= 0) {
+      setDeliveryFeeError("Delivery fee must be greater than 0");
       setIsSubmitting(false);
       return;
     }
@@ -160,6 +172,7 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
         longitude,
         logo_image_id: logoId,
         cover_image_id: coverId,
+        delivery_fee: parseFloat(String(deliveryFee)),
       };
 
       let response;
@@ -248,6 +261,8 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
               setStoreNameError(fieldError.message);
             } else if (fieldError.field === "categoriesIds") {
               setCategoriesError(fieldError.message);
+            } else if (fieldError.field === "delivery_fee") {
+              setDeliveryFeeError(fieldError.message);
             }
           },
         );
@@ -294,6 +309,20 @@ export default function StoreDetail({ storeId }: StoreDetailProps) {
               initialLongitude={longitude ?? undefined}
             />
           </Box>
+          <TextField
+            value={deliveryFee}
+            onChange={(event) => setDeliveryFee(event.target.value)}
+            name="delivery_fee"
+            label="Delivery Fee"
+            type="number"
+            inputProps={{
+              step: "0.01",
+              min: "0",
+            }}
+            error={!!deliveryFeeError}
+            helperText={deliveryFeeError ?? " "}
+            fullWidth
+          />
           <TextField
             value={storeName}
             onChange={(event) => setStoreName(event.target.value)}
