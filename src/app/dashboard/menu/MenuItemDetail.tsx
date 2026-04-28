@@ -39,7 +39,7 @@ interface MenuItem {
   price: number;
   ingredients: string;
   configurations: Configuration[];
-  imageId?: string;
+  image_id?: number | null;
 }
 
 const SESSION_STORAGE_KEY = "selectedStoreId";
@@ -47,7 +47,7 @@ const SESSION_STORAGE_KEY = "selectedStoreId";
 export default function MenuItemDetail() {
   const router = useRouter();
   const params = useParams();
-  const menuItemId = params?.menuItemId as string | undefined;
+  const menuItemId = params?.menuItemId as number | undefined;
 
   const [loading, setLoading] = useState(!!menuItemId);
   const [saving, setSaving] = useState(false);
@@ -60,7 +60,7 @@ export default function MenuItemDetail() {
     price: 0,
     ingredients: "",
     configurations: [],
-    imageId: undefined,
+    image_id: undefined,
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -214,7 +214,7 @@ export default function MenuItemDetail() {
         configurations: formData.configurations,
       };
 
-      let savedItemId: number | string = menuItemId;
+      let savedItemId: number | undefined = menuItemId;
 
       if (menuItemId) {
         // Edit existing item
@@ -238,7 +238,7 @@ export default function MenuItemDetail() {
 
       // Upload image after successful save if a file was selected
       if (selectedFile && savedItemId) {
-        await uploadImage(storeId, Number(savedItemId));
+        await uploadImage(storeId, savedItemId);
       }
 
       // Navigate back after everything is complete
@@ -328,10 +328,10 @@ export default function MenuItemDetail() {
           <h3 style={{ margin: "0 0 16px 0" }}>Menu Item Image</h3>
 
           {/* Display current image if editing */}
-          {menuItemId && formData.imageId && !imagePreview && (
+          {menuItemId && formData.image_id && !imagePreview && (
             <Box sx={{ mb: 2 }}>
               <img
-                src={`/stores/${sessionStorage.getItem(SESSION_STORAGE_KEY)}/menu/${menuItemId}/image/${formData.imageId}`}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/${sessionStorage.getItem(SESSION_STORAGE_KEY)}/menu/${menuItemId}/image/${formData.image_id}`}
                 alt="Menu item"
                 style={{
                   maxWidth: "100%",
