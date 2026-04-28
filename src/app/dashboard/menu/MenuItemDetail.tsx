@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import http from "@/components/http";
@@ -38,6 +39,7 @@ interface MenuItem {
   price: number;
   ingredients: string;
   configurations: Configuration[];
+  imageId?: string;
 }
 
 const SESSION_STORAGE_KEY = "selectedStoreId";
@@ -50,6 +52,7 @@ export default function MenuItemDetail() {
   const [loading, setLoading] = useState(!!menuItemId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Omit<MenuItem, "id" | "store_id">>({
     name: "",
@@ -57,8 +60,11 @@ export default function MenuItemDetail() {
     price: 0,
     ingredients: "",
     configurations: [],
+    imageId: undefined,
   });
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [newOption, setNewOption] = useState("");
   const [addingConfigIndex, setAddingConfigIndex] = useState<number | null>(
     null,
@@ -144,6 +150,49 @@ export default function MenuItemDetail() {
     updateConfiguration(configIndex, "options", updatedOptions);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagePreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (storeId: string, itemId: number) => {
+    if (!selectedFile) return;
+
+    try {
+      const formDataForUpload = new FormData();
+      formDataForUpload.append("file", selectedFile);
+
+      const response = await http.post(
+        `/stores/${storeId}/menu/${itemId}/upload-image`,
+        formDataForUpload,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        setSelectedFile(null);
+        setImagePreview(null);
+        // Refresh the menu item to get the new imageId if editing
+        if (menuItemId) {
+          await fetchMenuItem();
+        }
+      }
+    } catch (err) {
+      console.error("Failed to upload image:", err);
+      setUploadError("Failed to upload image");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -165,6 +214,8 @@ export default function MenuItemDetail() {
         configurations: formData.configurations,
       };
 
+      let savedItemId: number | string = menuItemId;
+
       if (menuItemId) {
         // Edit existing item
         const response = await http.put(
@@ -172,7 +223,7 @@ export default function MenuItemDetail() {
           requestData,
         );
         if (response.status === 204) {
-          router.back();
+          savedItemId = menuItemId;
         }
       } else {
         // Create new item
@@ -181,9 +232,17 @@ export default function MenuItemDetail() {
           requestData,
         );
         if (response.status === 201) {
-          router.back();
+          savedItemId = response.data.id;
         }
       }
+
+      // Upload image after successful save if a file was selected
+      if (selectedFile && savedItemId) {
+        await uploadImage(storeId, Number(savedItemId));
+      }
+
+      // Navigate back after everything is complete
+      router.back();
     } catch (err) {
       console.error("Failed to save menu item:", err);
       setError("Failed to save menu item");
@@ -207,6 +266,16 @@ export default function MenuItemDetail() {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
+        </Alert>
+      )}
+
+      {uploadError && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setUploadError(null)}
+        >
+          {uploadError}
         </Alert>
       )}
 
@@ -253,6 +322,79 @@ export default function MenuItemDetail() {
           multiline
           rows={2}
         />
+
+        {/* Image Section */}
+        <Box sx={{ mt: 3, pt: 2, borderTop: "1px solid #eee" }}>
+          <h3 style={{ margin: "0 0 16px 0" }}>Menu Item Image</h3>
+
+          {/* Display current image if editing */}
+          {menuItemId && formData.imageId && !imagePreview && (
+            <Box sx={{ mb: 2 }}>
+              <img
+                src={`/stores/${sessionStorage.getItem(SESSION_STORAGE_KEY)}/menu/${menuItemId}/image/${formData.imageId}`}
+                alt="Menu item"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "300px",
+                  borderRadius: "8px",
+                  border: "1px solid #eee",
+                }}
+              />
+            </Box>
+          )}
+
+          {/* Image preview */}
+          {imagePreview && (
+            <Box sx={{ mb: 2 }}>
+              <img
+                src={imagePreview}
+                alt="Preview"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "300px",
+                  borderRadius: "8px",
+                  border: "1px solid #eee",
+                }}
+              />
+            </Box>
+          )}
+
+          {/* File input */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            style={{ display: "none" }}
+            id="image-input"
+          />
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              htmlFor="image-input"
+              startIcon={<CloudUploadIcon />}
+            >
+              Choose Image
+            </Button>
+            {selectedFile && (
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  setSelectedFile(null);
+                  setImagePreview(null);
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
+          {selectedFile && (
+            <Box sx={{ mt: 1, color: "text.secondary", fontSize: "0.875rem" }}>
+              Selected: {selectedFile.name}
+            </Box>
+          )}
+        </Box>
 
         {/* Configurations Section */}
         <Box sx={{ mt: 3, pt: 2, borderTop: "1px solid #eee" }}>
