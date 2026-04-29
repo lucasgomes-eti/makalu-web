@@ -84,7 +84,7 @@ export default function MenuItemDetail() {
         return;
       }
 
-      const response = await http.get(`/stores/${storeId}/menu/${menuItemId}`);
+      const response = await http.get(`/stores/menu/${menuItemId}`);
       if (response.status === 200) {
         setFormData(response.data);
       }
@@ -331,7 +331,7 @@ export default function MenuItemDetail() {
           {menuItemId && formData.image_id && !imagePreview && (
             <Box sx={{ mb: 2 }}>
               <img
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/${sessionStorage.getItem(SESSION_STORAGE_KEY)}/menu/${menuItemId}/image/${formData.image_id}`}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/menu/${menuItemId}/image/${formData.image_id}`}
                 alt="Menu item"
                 style={{
                   maxWidth: "100%",
