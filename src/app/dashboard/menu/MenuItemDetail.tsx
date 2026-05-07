@@ -25,10 +25,15 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import http from "@/components/http";
 
+interface Option {
+  name: string;
+  additionalPrice: number;
+}
+
 interface Configuration {
   name: string;
   type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "QUANTITY";
-  options: string[];
+  options: Option[];
 }
 
 interface MenuItem {
@@ -65,7 +70,10 @@ export default function MenuItemDetail() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [newOption, setNewOption] = useState("");
+  const [newOption, setNewOption] = useState<Option>({
+    name: "",
+    additionalPrice: 0,
+  });
   const [addingConfigIndex, setAddingConfigIndex] = useState<number | null>(
     null,
   );
@@ -133,13 +141,13 @@ export default function MenuItemDetail() {
   };
 
   const addOption = (configIndex: number) => {
-    if (!newOption.trim()) return;
+    if (!newOption.name.trim()) return;
 
     updateConfiguration(configIndex, "options", [
       ...formData.configurations[configIndex].options,
-      newOption,
+      { name: newOption.name, additionalPrice: newOption.additionalPrice },
     ]);
-    setNewOption("");
+    setNewOption({ name: "", additionalPrice: 0 });
     setAddingConfigIndex(null);
   };
 
@@ -477,14 +485,36 @@ export default function MenuItemDetail() {
                         <>
                           <TextField
                             size="small"
-                            placeholder="Add option"
-                            value={newOption}
-                            onChange={(e) => setNewOption(e.target.value)}
+                            placeholder="Option name"
+                            value={newOption.name}
+                            onChange={(e) =>
+                              setNewOption((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
                             onKeyPress={(e) => {
                               if (e.key === "Enter") {
                                 addOption(configIndex);
                               }
                             }}
+                          />
+                          <TextField
+                            size="small"
+                            placeholder="Additional price"
+                            type="number"
+                            slotProps={{
+                              htmlInput: { step: "0.01", min: "0" },
+                            }}
+                            value={newOption.additionalPrice}
+                            onChange={(e) =>
+                              setNewOption((prev) => ({
+                                ...prev,
+                                additionalPrice:
+                                  parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            sx={{ width: 160 }}
                           />
                           <Button
                             size="small"
@@ -498,7 +528,7 @@ export default function MenuItemDetail() {
                             variant="outlined"
                             onClick={() => {
                               setAddingConfigIndex(null);
-                              setNewOption("");
+                              setNewOption({ name: "", additionalPrice: 0 });
                             }}
                           >
                             Cancel
@@ -520,7 +550,11 @@ export default function MenuItemDetail() {
                       {config.options.map((option, optionIndex) => (
                         <Chip
                           key={optionIndex}
-                          label={option}
+                          label={
+                            option.additionalPrice > 0
+                              ? `${option.name} (+$${option.additionalPrice.toFixed(2)})`
+                              : option.name
+                          }
                           onDelete={() =>
                             removeOption(configIndex, optionIndex)
                           }
