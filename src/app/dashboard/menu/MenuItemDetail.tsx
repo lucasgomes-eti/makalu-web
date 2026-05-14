@@ -27,7 +27,7 @@ import http from "@/components/http";
 
 interface Option {
   name: string;
-  additionalPrice: number;
+  additional_price: number;
 }
 
 interface Configuration {
@@ -72,7 +72,7 @@ export default function MenuItemDetail() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [newOption, setNewOption] = useState<Option>({
     name: "",
-    additionalPrice: 0,
+    additional_price: 0,
   });
   const [addingConfigIndex, setAddingConfigIndex] = useState<number | null>(
     null,
@@ -145,9 +145,9 @@ export default function MenuItemDetail() {
 
     updateConfiguration(configIndex, "options", [
       ...formData.configurations[configIndex].options,
-      { name: newOption.name, additionalPrice: newOption.additionalPrice },
+      { name: newOption.name, additional_price: newOption.additional_price },
     ]);
-    setNewOption({ name: "", additionalPrice: 0 });
+    setNewOption({ name: "", additional_price: 0 });
     setAddingConfigIndex(null);
   };
 
@@ -506,11 +506,11 @@ export default function MenuItemDetail() {
                             slotProps={{
                               htmlInput: { step: "0.01", min: "0" },
                             }}
-                            value={newOption.additionalPrice}
+                            value={newOption.additional_price}
                             onChange={(e) =>
                               setNewOption((prev) => ({
                                 ...prev,
-                                additionalPrice:
+                                additional_price:
                                   parseFloat(e.target.value) || 0,
                               }))
                             }
@@ -528,7 +528,7 @@ export default function MenuItemDetail() {
                             variant="outlined"
                             onClick={() => {
                               setAddingConfigIndex(null);
-                              setNewOption({ name: "", additionalPrice: 0 });
+                              setNewOption({ name: "", additional_price: 0 });
                             }}
                           >
                             Cancel
@@ -551,8 +551,8 @@ export default function MenuItemDetail() {
                         <Chip
                           key={optionIndex}
                           label={
-                            option.additionalPrice > 0
-                              ? `${option.name} (+$${option.additionalPrice.toFixed(2)})`
+                            option.additional_price > 0
+                              ? `${option.name} (+$${option.additional_price.toFixed(2)})`
                               : option.name
                           }
                           onDelete={() =>
