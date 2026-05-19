@@ -169,7 +169,7 @@ export default function SelectContent() {
               <Avatar alt={storeItem.name}>
                 {storeItem.logo_image_id ? (
                   <img
-                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/logo-image/${storeItem.logo_image_id}`}
+                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${storeItem.logo_image_id}`}
                     alt={storeItem.name}
                     style={{
                       width: "100%",

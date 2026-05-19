@@ -53,7 +53,7 @@ export default function UploadCoverImage({
 }: UploadCoverImageProps) {
   const [coverSrc, setCoverSrc] = React.useState<string | undefined>(
     imageId
-      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/cover-image/${imageId}`
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${imageId}`
       : undefined,
   );
   const inputRef = React.useRef<HTMLInputElement>(null);

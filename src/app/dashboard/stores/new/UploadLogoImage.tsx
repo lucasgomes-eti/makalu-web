@@ -13,7 +13,7 @@ export default function UploadLogoImage({
 }: UploadLogoImageProps) {
   const [avatarSrc, setAvatarSrc] = React.useState<string | undefined>(
     imageId
-      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/logo-image/${imageId}`
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${imageId}`
       : undefined,
   );
 

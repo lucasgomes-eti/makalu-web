@@ -98,7 +98,7 @@ export default function SideMenu() {
           alt={profile?.name || "User"}
           src={
             profile?.profile_image_id
-              ? `${apiBaseUrl}/profile/image/${profile.profile_image_id}`
+              ? `${apiBaseUrl}/images/${profile.profile_image_id}`
               : undefined
           }
           sx={{ width: 36, height: 36 }}

@@ -339,7 +339,7 @@ export default function MenuItemDetail() {
           {menuItemId && formData.image_id && !imagePreview && (
             <Box sx={{ mb: 2 }}>
               <img
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/stores/menu/${menuItemId}/image/${formData.image_id}`}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${formData.image_id}`}
                 alt="Menu item"
                 style={{
                   maxWidth: "100%",
