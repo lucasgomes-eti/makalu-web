@@ -1,21 +1,30 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
-import { ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
-import theme from "@/theme";
+import AppTheme from "@/shared/theme/AppTheme";
 
-export default function RootLayout(props: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: "Makalu",
+  description: "Backoffice for the Makalu delivery platform.",
+};
+
+/**
+ * Root layout. Mounts the single theme provider for the whole application —
+ * `AppTheme` must not appear anywhere below this point.
+ */
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <InitColorSchemeScript attribute="class" />
+        {/* Applies the stored colour scheme before first paint, avoiding a flash. */}
+        <InitColorSchemeScript attribute="data-mui-color-scheme" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <ThemeProvider theme={theme}>
-            {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
-            <CssBaseline />
-            {props.children}
-          </ThemeProvider>
+          <AppTheme>{children}</AppTheme>
         </AppRouterCacheProvider>
       </body>
     </html>

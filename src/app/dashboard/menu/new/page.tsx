@@ -1,5 +1,5 @@
-import MenuItemDetail from "@/app/dashboard/menu/MenuItemDetail";
+import MenuItemForm from "@/features/menu/components/MenuItemForm";
 
-export default function NewMenuItem() {
-  return <MenuItemDetail />;
+export default function NewMenuItemPage() {
+  return <MenuItemForm />;
 }

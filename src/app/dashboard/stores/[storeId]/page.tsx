@@ -1,11 +1,15 @@
-"use client";
+import { notFound } from "next/navigation";
+import EditStoreScreen from "@/features/stores/components/EditStoreScreen";
 
-import { useParams } from "next/navigation";
-import StoreDetail from "../components/StoreDetail";
+export default async function EditStorePage({
+  params,
+}: {
+  params: Promise<{ storeId: string }>;
+}) {
+  const { storeId } = await params;
+  const parsedId = Number.parseInt(storeId, 10);
 
-export default function EditStore() {
-  const params = useParams();
-  const storeId = params.storeId as string;
+  if (!Number.isInteger(parsedId) || parsedId <= 0) notFound();
 
-  return <StoreDetail storeId={storeId} />;
+  return <EditStoreScreen storeId={parsedId} />;
 }

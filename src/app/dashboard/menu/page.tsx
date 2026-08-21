@@ -1,29 +1,26 @@
 "use client";
 
-import MenuTable from "./MenuTable";
-import { Fab, Box } from "@mui/material";
+import Box from "@mui/material/Box";
+import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import MenuItemsTable from "@/features/menu/components/MenuItemsTable";
+import PageHeader from "@/shared/components/PageHeader";
 
-export default function Menu() {
-  const router = useRouter();
-
-  const handleAddItem = () => {
-    router.push("/dashboard/menu/new");
-  };
-
+export default function MenuPage() {
   return (
-    <Box sx={{ position: "relative" }}>
-      <MenuTable />
+    <Box sx={{ width: "100%" }}>
+      <PageHeader
+        title="Menu"
+        description="Dishes available in the selected store."
+      />
+      <MenuItemsTable />
       <Fab
         color="primary"
-        aria-label="add menu item"
-        onClick={handleAddItem}
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          right: 16,
-        }}
+        aria-label="Add menu item"
+        component={Link}
+        href="/dashboard/menu/new"
+        sx={{ position: "fixed", bottom: 16, right: 16 }}
       >
         <AddIcon />
       </Fab>

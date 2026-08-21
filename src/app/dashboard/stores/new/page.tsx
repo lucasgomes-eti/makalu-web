@@ -1,7 +1,5 @@
-"use client";
+import StoreForm from "@/features/stores/components/StoreForm";
 
-import StoreDetail from "../components/StoreDetail";
-
-export default function NewStore() {
-  return <StoreDetail />;
+export default function NewStorePage() {
+  return <StoreForm />;
 }

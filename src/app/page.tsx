@@ -1,38 +1,21 @@
 "use client";
 
-import * as React from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import { useAuthTokenStatus } from "@/hooks/useAuthTokenStatus";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { POST_SIGN_IN_PATH } from "@/features/auth/hooks/useSignIn";
+import { SIGN_IN_PATH } from "@/lib/api/httpClient";
+import LoadingState from "@/shared/components/LoadingState";
 
-export default function Home() {
+/** Entry point: sends the visitor to the dashboard or to sign-in. */
+export default function HomePage() {
   const router = useRouter();
-  const { hasToken, isLoading } = useAuthTokenStatus();
+  const { isAuthenticated, isResolving } = useSession();
 
   useEffect(() => {
-    if (isLoading) {
-      return;
-    }
+    if (isResolving) return;
+    router.replace(isAuthenticated ? POST_SIGN_IN_PATH : SIGN_IN_PATH);
+  }, [isResolving, isAuthenticated, router]);
 
-    if (hasToken) {
-      router.replace("/dashboard/orders");
-    } else {
-      router.replace("/sign-in");
-    }
-  }, [isLoading, hasToken, router]);
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
-      <CircularProgress />
-    </Box>
-  );
+  return <LoadingState fullPage label="Loading Makalu" />;
 }
