@@ -1,7 +1,7 @@
 # Makalu Web
 
 Backoffice for the Makalu delivery platform. Store owners sign in, manage their stores
-and menus, and (in future) work their orders and analytics.
+and menus, and work their incoming orders.
 
 Built with **Next.js 16** (App Router), **React 19**, **TypeScript**, **MUI 7**, and
 **Axios**, against a separate Makalu REST API.
@@ -110,6 +110,7 @@ src/
 │   ├── auth/       api · components · hooks · model
 │   ├── stores/     api · components · context · hooks · model
 │   ├── menu/       api · components · hooks · model
+│   ├── orders/     api · components · hooks · model
 │   ├── profile/    api · hooks
 │   └── analytics/  vendored MUI template widgets (placeholder)
 │
@@ -207,7 +208,7 @@ light/dark preference before first paint. **Do not nest a second `ThemeProvider`
 
 ### Testing
 
-Vitest + React Testing Library + jsdom. 170 tests; coverage thresholds are enforced in
+Vitest + React Testing Library + jsdom. 193 tests; coverage thresholds are enforced in
 `vitest.config.mts` and are a floor, not a target.
 
 The rule of thumb: **test behaviour through the public surface.**
@@ -234,7 +235,9 @@ everything from RTL, so tests import from one place.
 
 ## Known gaps
 
-- Orders and Analytics are placeholders; Analytics renders template sample data.
+- Orders are listed on a board, but status changes are local only until the API
+  exposes a status endpoint.
+- Analytics is a placeholder that renders template sample data.
 - Auth relies on browser storage (see **Security model**).
 - No i18n layer; UI strings are inline English.
 - No server-side data fetching — every screen is a client component talking to the API
