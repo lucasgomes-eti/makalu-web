@@ -17,6 +17,11 @@ describe("canMoveOrder", () => {
     expect(canMoveOrder("ACCEPTED", "IN_ROUTE")).toBe(true);
   });
 
+  it("lets an order be cancelled until it is delivered", () => {
+    expect(canMoveOrder("ACCEPTED", "CANCELLED")).toBe(true);
+    expect(canMoveOrder("IN_ROUTE", "CANCELLED")).toBe(true);
+  });
+
   it("does not skip steps or go backwards", () => {
     expect(canMoveOrder("PENDING", "IN_ROUTE")).toBe(false);
     expect(canMoveOrder("ACCEPTED", "PENDING")).toBe(false);

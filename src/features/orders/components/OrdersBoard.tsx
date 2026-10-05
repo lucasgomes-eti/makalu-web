@@ -6,6 +6,7 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
 import EmptyState from "@/shared/components/EmptyState";
 import ErrorState from "@/shared/components/ErrorState";
 import LoadingState from "@/shared/components/LoadingState";
@@ -22,6 +23,9 @@ export default function OrdersBoard() {
     hasData,
     isEmpty,
     moveOrder,
+    isMovePending,
+    moveError,
+    dismissMoveError,
     isLoading,
     isRefreshing,
     error,
@@ -29,13 +33,28 @@ export default function OrdersBoard() {
     hasStore,
   } = useOrderBoard();
   const [draggedOrder, setDraggedOrder] = React.useState<Order | null>(null);
+  /** The order last dropped on Cancelled. Kept after closing so the dialog's exit
+   * transition still names it. */
+  const [orderToCancel, setOrderToCancel] = React.useState<Order | null>(null);
+  const [isConfirmingCancel, setIsConfirmingCancel] = React.useState(false);
 
   const handleDrop = (status: OrderStatus) => {
-    if (draggedOrder) moveOrder(draggedOrder, status);
+    if (draggedOrder) {
+      if (status === "CANCELLED") {
+        setOrderToCancel(draggedOrder);
+        setIsConfirmingCancel(true);
+      } else moveOrder(draggedOrder, status);
+    }
     setDraggedOrder(null);
   };
 
-  const hasAnyMove = (order: Order) =>
+  const confirmCancel = () => {
+    if (orderToCancel) moveOrder(orderToCancel, "CANCELLED");
+    setIsConfirmingCancel(false);
+  };
+
+  const canDrag = (order: Order) =>
+    !isMovePending(order) &&
     ORDER_STATUSES.some((status) => canMoveOrder(order.status, status));
 
   return (
@@ -71,6 +90,13 @@ export default function OrdersBoard() {
       ) : (
         <Stack spacing={2}>
           {error && <ErrorState error={error} onRetry={refresh} />}
+          {moveError && (
+            <ErrorState
+              title="The order was not moved"
+              error={moveError}
+              onDismiss={dismissMoveError}
+            />
+          )}
           {isEmpty && <EmptyState message="No orders yet." />}
           {hasData && (
             <Box
@@ -84,7 +110,8 @@ export default function OrdersBoard() {
                   acceptsDrop={
                     draggedOrder !== null && canMoveOrder(draggedOrder.status, status)
                   }
-                  canDrag={hasAnyMove}
+                  canDrag={canDrag}
+                  isPending={isMovePending}
                   onCardDragStart={setDraggedOrder}
                   onCardDragEnd={() => setDraggedOrder(null)}
                   onDrop={handleDrop}
@@ -94,6 +121,17 @@ export default function OrdersBoard() {
           )}
         </Stack>
       )}
+
+      <ConfirmDialog
+        open={isConfirmingCancel}
+        title="Cancel order?"
+        description={`Order #${orderToCancel?.order_number} will be cancelled. This can't be undone.`}
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        destructive
+        onConfirm={confirmCancel}
+        onCancel={() => setIsConfirmingCancel(false)}
+      />
     </Box>
   );
 }

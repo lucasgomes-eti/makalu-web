@@ -96,16 +96,21 @@ Conventions:
 | See the selected store's orders as a board, one column per status | `useOrderBoard` → `ordersApi.listStoreOrders` | `components/OrdersBoard.test.tsx`, `api/ordersApi.test.ts` |
 | See what an order contains, where it goes, and its total | `OrderCard` → `describeItemConfigurations` | `components/OrdersBoard.test.tsx`, `model/orderBoard.test.ts` |
 | Refresh the board to pick up new orders | `useOrderBoard().refresh` | `components/OrdersBoard.test.tsx` |
-| Drag an order to its next status | `useOrderBoard().moveOrder` | `components/OrdersBoard.test.tsx` |
+| Drag an order to its next status, saved to the API (shown at once) | `useOrderBoard().moveOrder` → `ordersApi.updateOrderStatus` | `components/OrdersBoard.test.tsx`, `api/ordersApi.test.ts` |
+| Confirm before cancelling an order | `OrdersBoard` → `ConfirmDialog` | `components/OrdersBoard.test.tsx` |
+| See a rejected move rolled back, with the reason (board reloads on 400/404) | `useOrderBoard().moveError` | `components/OrdersBoard.test.tsx` |
 | Be stopped from a move the lifecycle does not allow | `canMoveOrder` | `model/orderBoard.test.ts`, `components/OrdersBoard.test.tsx` |
 
 **Notes**
 
-- Lifecycle: `PENDING → ACCEPTED | CANCELLED`, `ACCEPTED → IN_ROUTE`. `FINISHED` is
-  set by the customer, so the manager cannot drop into it; `FINISHED` and
-  `CANCELLED` are final.
-- Moves are **local only** — there is no status endpoint yet. A refresh or a store
-  switch shows the server's statuses again.
+- Lifecycle on the board: `PENDING → ACCEPTED | CANCELLED`,
+  `ACCEPTED → IN_ROUTE | CANCELLED`, `IN_ROUTE → CANCELLED`. The API also allows
+  `IN_ROUTE → FINISHED`, but finishing is left to the customer, so the manager cannot
+  drop into it. `FINISHED` and `CANCELLED` are final.
+- Moves go to `PATCH /orders/{orderId}/status`. The card moves at once and is
+  replaced by the order the API returns. On failure it moves back and the error is
+  shown. A 400 (`MK-706`, the move is not allowed from the current status) or a 404
+  (`MK-705`, the order is gone) means the board is stale, so it reloads.
 - A refresh keeps the current board on screen; only the first load for a store shows
   a spinner.
 
