@@ -23,6 +23,7 @@ interface OrderColumnProps {
   /** A card is being dragged and may be dropped here. */
   acceptsDrop: boolean;
   canDrag: (order: Order) => boolean;
+  isPending: (order: Order) => boolean;
   onCardDragStart: (order: Order) => void;
   onCardDragEnd: () => void;
   onDrop: (status: OrderStatus) => void;
@@ -34,6 +35,7 @@ export default function OrderColumn({
   orders,
   acceptsDrop,
   canDrag,
+  isPending,
   onCardDragStart,
   onCardDragEnd,
   onDrop,
@@ -97,6 +99,7 @@ export default function OrderColumn({
             key={order.id}
             order={order}
             draggable={canDrag(order)}
+            pending={isPending(order)}
             onDragStart={onCardDragStart}
             onDragEnd={onCardDragEnd}
           />

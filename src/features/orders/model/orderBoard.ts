@@ -1,15 +1,17 @@
 import { Order, ORDER_STATUSES, OrderStatus } from "./order.types";
 
 /**
- * Moves a store manager may make on the board.
+ * Moves a store manager may make on the board — a subset of what the API allows
+ * (`OrderStatus.kt`).
  *
- * `FINISHED` is set by the customer when the order arrives, so no column leads to
- * it; `FINISHED` and `CANCELLED` are terminal.
+ * The API also accepts `IN_ROUTE → FINISHED`, but finishing is left to the customer
+ * when the order arrives, so no column leads to it. `FINISHED` and `CANCELLED` are
+ * terminal.
  */
 const MANAGER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ["ACCEPTED", "CANCELLED"],
-  ACCEPTED: ["IN_ROUTE"],
-  IN_ROUTE: [],
+  ACCEPTED: ["IN_ROUTE", "CANCELLED"],
+  IN_ROUTE: ["CANCELLED"],
   FINISHED: [],
   CANCELLED: [],
 };

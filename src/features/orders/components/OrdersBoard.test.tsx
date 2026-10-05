@@ -8,10 +8,15 @@ import {
   within,
 } from "@/test/renderWithProviders";
 import { order, orderItem } from "@/test/orders";
-import { listStoreOrders } from "../api/ordersApi";
+import { AxiosError, AxiosHeaders } from "axios";
+import { listStoreOrders, updateOrderStatus } from "../api/ordersApi";
+import { Order, OrderStatus } from "../model/order.types";
 import OrdersBoard from "./OrdersBoard";
 
-vi.mock("../api/ordersApi", () => ({ listStoreOrders: vi.fn() }));
+vi.mock("../api/ordersApi", () => ({
+  listStoreOrders: vi.fn(),
+  updateOrderStatus: vi.fn(),
+}));
 
 let selectedStoreId: number | null = 7;
 vi.mock("@/features/stores/context/SelectedStoreProvider", () => ({
@@ -19,6 +24,25 @@ vi.mock("@/features/stores/context/SelectedStoreProvider", () => ({
 }));
 
 const mockList = vi.mocked(listStoreOrders);
+const mockUpdate = vi.mocked(updateOrderStatus);
+
+/** The API echoes the order back with its new status. */
+function acceptMoves() {
+  mockUpdate.mockImplementation(async (id: number, status: OrderStatus) =>
+    order({ id, status }),
+  );
+}
+
+function apiError(status: number, internal_code: string, message: string) {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError("Request failed", "ERR_BAD_REQUEST", config, null, {
+    status,
+    data: { http_code: status, internal_code, message },
+    statusText: "",
+    headers: {},
+    config,
+  });
+}
 
 function column(name: string) {
   return screen.getByRole("region", { name });
@@ -41,6 +65,7 @@ describe("OrdersBoard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     selectedStoreId = 7;
+    acceptMoves();
   });
 
   it("places each order in the column for its status", async () => {
@@ -148,17 +173,115 @@ describe("OrdersBoard", () => {
     expect(await screen.findByRole("article", { name: "Order 1002" })).toBeInTheDocument();
   });
 
-  it("moves a pending order to accepted when dropped there", async () => {
+  it("saves a move to the API when an order is dropped on another column", async () => {
     mockList.mockResolvedValue([order()]);
 
     renderWithProviders(<OrdersBoard />);
     const card = await screen.findByRole("article", { name: "Order 1001" });
     drag(card, column("Accepted"));
 
-    expect(
-      within(column("Accepted")).getByRole("article", { name: "Order 1001" }),
-    ).toBeInTheDocument();
+    expect(mockUpdate).toHaveBeenCalledWith(1, "ACCEPTED");
+    await waitFor(() =>
+      expect(
+        within(column("Accepted")).getByRole("article", { name: "Order 1001" }),
+      ).not.toHaveAttribute("aria-busy", "true"),
+    );
     expect(within(column("Pending")).queryByRole("article")).not.toBeInTheDocument();
+  });
+
+  it("moves the card at once, before the API answers", async () => {
+    let resolveUpdate: (updated: Order) => void = () => {};
+    mockUpdate.mockImplementation(
+      () => new Promise((resolve) => (resolveUpdate = resolve)),
+    );
+    mockList.mockResolvedValue([order()]);
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Accepted"));
+
+    const moved = within(column("Accepted")).getByRole("article", { name: "Order 1001" });
+    expect(moved).toHaveAttribute("aria-busy", "true");
+    expect(moved).toHaveAttribute("draggable", "false");
+
+    resolveUpdate(order({ status: "ACCEPTED" }));
+
+    await waitFor(() => expect(moved).toHaveAttribute("aria-busy", "false"));
+    expect(moved).toHaveAttribute("draggable", "true");
+  });
+
+  it("moves the card back and says why when the API rejects the move", async () => {
+    mockUpdate.mockRejectedValue(
+      apiError(400, "MK-706", "Order cannot move from PENDING to ACCEPTED"),
+    );
+    mockList.mockResolvedValue([order()]);
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Accepted"));
+
+    expect(
+      await screen.findByText("(MK-706) Order cannot move from PENDING to ACCEPTED"),
+    ).toBeInTheDocument();
+    expect(
+      within(column("Pending")).getByRole("article", { name: "Order 1001" }),
+    ).toBeInTheDocument();
+    expect(within(column("Accepted")).queryByRole("article")).not.toBeInTheDocument();
+  });
+
+  it("reloads the board when the order changed elsewhere or no longer exists", async () => {
+    mockUpdate.mockRejectedValue(apiError(404, "MK-705", "Order not found"));
+    mockList.mockResolvedValue([order()]);
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Accepted"));
+
+    await screen.findByText("(MK-705) Order not found");
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+  });
+
+  it("lets the user dismiss a rejected move's error", async () => {
+    mockUpdate.mockRejectedValue(apiError(500, "MK-500", "Something broke"));
+    mockList.mockResolvedValue([order()]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Accepted"));
+    await screen.findByText("(MK-500) Something broke");
+    await user.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByText("(MK-500) Something broke")).not.toBeInTheDocument();
+  });
+
+  it("asks before cancelling, and sends nothing if the user keeps the order", async () => {
+    mockList.mockResolvedValue([order()]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Cancelled"));
+
+    const dialog = screen.getByRole("dialog", { name: "Cancel order?" });
+    expect(dialog).toHaveTextContent("Order #1001 will be cancelled.");
+    await user.click(within(dialog).getByRole("button", { name: "Keep order" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(
+      within(column("Pending")).getByRole("article", { name: "Order 1001" }),
+    ).toBeInTheDocument();
+  });
+
+  it("cancels the order once the user confirms", async () => {
+    mockList.mockResolvedValue([order({ status: "ACCEPTED" })]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Cancelled"));
+    await user.click(screen.getByRole("button", { name: "Cancel order" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    expect(mockUpdate).toHaveBeenCalledWith(1, "CANCELLED");
+    expect(
+      await within(column("Cancelled")).findByRole("article", { name: "Order 1001" }),
+    ).toBeInTheDocument();
   });
 
   it("refuses a move the order lifecycle does not allow", async () => {
@@ -168,10 +291,23 @@ describe("OrdersBoard", () => {
     const card = await screen.findByRole("article", { name: "Order 1001" });
     drag(card, column("In route"));
 
+    expect(mockUpdate).not.toHaveBeenCalled();
     expect(
       within(column("Pending")).getByRole("article", { name: "Order 1001" }),
     ).toBeInTheDocument();
     expect(within(column("In route")).queryByRole("article")).not.toBeInTheDocument();
+  });
+
+  it("leaves finishing an order to the customer", async () => {
+    mockList.mockResolvedValue([order({ status: "IN_ROUTE" })]);
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Finished"));
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(
+      within(column("In route")).getByRole("article", { name: "Order 1001" }),
+    ).toBeInTheDocument();
   });
 
   it("does not let a finished order be picked up", async () => {
@@ -185,18 +321,19 @@ describe("OrdersBoard", () => {
     );
   });
 
-  it("discards local moves when the orders are refreshed", async () => {
-    mockList.mockResolvedValue([order()]);
+  it("shows the server's statuses after a refresh", async () => {
+    mockList
+      .mockResolvedValueOnce([order()])
+      .mockResolvedValueOnce([order({ status: "IN_ROUTE" })]);
     const user = userEvent.setup();
 
     renderWithProviders(<OrdersBoard />);
     drag(await screen.findByRole("article", { name: "Order 1001" }), column("Accepted"));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
     await user.click(screen.getByRole("button", { name: "Refresh" }));
 
-    await waitFor(() =>
-      expect(
-        within(column("Pending")).getByRole("article", { name: "Order 1001" }),
-      ).toBeInTheDocument(),
-    );
+    expect(
+      await within(column("In route")).findByRole("article", { name: "Order 1001" }),
+    ).toBeInTheDocument();
   });
 });

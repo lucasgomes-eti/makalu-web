@@ -235,8 +235,6 @@ everything from RTL, so tests import from one place.
 
 ## Known gaps
 
-- Orders are listed on a board, but status changes are local only until the API
-  exposes a status endpoint.
 - Analytics is a placeholder that renders template sample data.
 - Auth relies on browser storage (see **Security model**).
 - No i18n layer; UI strings are inline English.

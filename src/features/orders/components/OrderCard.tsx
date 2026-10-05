@@ -16,6 +16,8 @@ interface OrderCardProps {
   order: Order;
   /** Whether the order has anywhere to go; terminal orders are not draggable. */
   draggable: boolean;
+  /** A move of this order is waiting for the API. */
+  pending?: boolean;
   onDragStart: (order: Order) => void;
   onDragEnd: () => void;
 }
@@ -24,6 +26,7 @@ interface OrderCardProps {
 export default function OrderCard({
   order,
   draggable,
+  pending = false,
   onDragStart,
   onDragEnd,
 }: OrderCardProps) {
@@ -42,7 +45,13 @@ export default function OrderCard({
       draggable={draggable}
       onDragStart={draggable ? handleDragStart : undefined}
       onDragEnd={onDragEnd}
-      sx={{ cursor: draggable ? "grab" : "default", flexShrink: 0 }}
+      aria-busy={pending}
+      sx={{
+        cursor: draggable ? "grab" : "default",
+        flexShrink: 0,
+        opacity: pending ? 0.6 : 1,
+        transition: "opacity 120ms",
+      }}
     >
       <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
         <Stack direction="row" sx={{ justifyContent: "space-between", mb: 1 }}>
