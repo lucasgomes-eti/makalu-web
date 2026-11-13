@@ -100,6 +100,11 @@ Conventions:
 | Confirm before cancelling an order | `OrdersBoard` → `ConfirmDialog` | `components/OrdersBoard.test.tsx` |
 | See a rejected move rolled back, with the reason (board reloads on 400/404) | `useOrderBoard().moveError` | `components/OrdersBoard.test.tsx` |
 | Be stopped from a move the lifecycle does not allow | `canMoveOrder` | `model/orderBoard.test.ts`, `components/OrdersBoard.test.tsx` |
+| See a new order appear the moment the customer places it, highlighted until looked at | `useOrderBoard` ← `useStoreOrdersRealtime` → `resolveOrderEvent` | `components/OrdersBoard.realtime.test.tsx`, `model/orderEvents.test.ts` |
+| See an order move when its status changes elsewhere (another tab, another person) | `useOrderBoard` → `withRemoteChange` | `components/OrdersBoard.realtime.test.tsx`, `model/orderEvents.test.ts` |
+| Hear a sound for a new order, and mute it | `useNewOrderSound` → `orderSoundPreference` | `components/OrdersBoard.realtime.test.tsx`, `model/orderSoundPreference.test.ts` |
+| Know whether the board is updating live | `useStoreOrdersRealtime` → `RealtimeStatus` | `components/OrdersBoard.realtime.test.tsx` |
+| Have the board catch up by itself after the connection drops | `openEmitterConnection` → `useOrderBoard().refresh` | `lib/realtime/emitterConnection.test.ts`, `components/OrdersBoard.realtime.test.tsx` |
 
 **Notes**
 
@@ -113,6 +118,23 @@ Conventions:
   (`MK-705`, the order is gone) means the board is stale, so it reloads.
 - A refresh keeps the current board on screen; only the first load for a store shows
   a spinner.
+- **Live updates are hints, the REST API is the truth.** The board subscribes over
+  MQTT (through a self-hosted Emitter broker) to `makalu/store/{storeId}/orders/`,
+  with a read-only key from `GET /orders/stores/{storeId}/realtime`. Messages are
+  delivered at most once and nothing is kept for a tab that is offline, so the board
+  refetches every time the connection is established, and whenever an event cannot be
+  applied (an order it does not have, an event type it does not know).
+- An event only carries ids, a status and `updatedAt`. A status change is shown from
+  the event; a new order needs its details, so it triggers a refetch. An event that is
+  not newer than the order on screen is dropped — that is also what keeps the echo of
+  this tab's own move from doing anything.
+- The key lasts 24 hours. It is renewed five minutes before it expires and fetched
+  again if the broker refuses the subscription. `503` from the credentials endpoint
+  means the API has realtime switched off: the board says so and works by Refresh.
+- One connection per store and tab (`lib/realtime/sharedConnection.ts`). MQTT.js is
+  imported on demand inside the connection, so it never runs during server rendering.
+- The sound is off until the store turns it on: browsers refuse audio before a user
+  gesture, and that click is the gesture. The choice is remembered per browser.
 
 ---
 

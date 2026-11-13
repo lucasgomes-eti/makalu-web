@@ -32,9 +32,10 @@ npm run lint && npm run typecheck && npm test
    business knowledge, it is not shared code.
 4. **One `ThemeProvider`**, in `app/layout.tsx`. Never nest another.
 5. **No API calls in components.** Components call hooks; hooks call `api/` functions.
-6. **No `sessionStorage` / `localStorage` outside `lib/auth/tokenStorage.ts` and
-   `features/stores/model/selectedStorePreference.ts`.** Add a module if you need a
-   third; do not scatter string keys.
+6. **No `sessionStorage` / `localStorage` outside `lib/auth/tokenStorage.ts`,
+   `features/stores/model/selectedStorePreference.ts` and
+   `features/orders/model/orderSoundPreference.ts`.** Add a module if you need
+   another; do not scatter string keys.
 7. **New routes are `page.tsx` files.** Never register a route in a layout — that was
    the single worst defect in the original code (`docs/CODE_REVIEW.md` §1.1).
 8. **Every use case gets a row in `docs/USE_CASES.md`** and a test.

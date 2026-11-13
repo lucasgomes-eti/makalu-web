@@ -15,6 +15,8 @@ import { Order, ORDER_STATUSES, OrderStatus } from "../model/order.types";
 import { canMoveOrder } from "../model/orderBoard";
 import { useOrderBoard } from "../hooks/useOrderBoard";
 import OrderColumn from "./OrderColumn";
+import RealtimeStatus from "./RealtimeStatus";
+import SoundToggle from "./SoundToggle";
 
 /** The selected store's orders as a kanban board, one column per status. */
 export default function OrdersBoard() {
@@ -24,6 +26,11 @@ export default function OrdersBoard() {
     isEmpty,
     moveOrder,
     isMovePending,
+    isNewOrder,
+    acknowledgeNewOrder,
+    connection,
+    isSoundEnabled,
+    toggleSound,
     moveError,
     dismissMoveError,
     isLoading,
@@ -64,7 +71,10 @@ export default function OrdersBoard() {
         description="Drag an order to move it through its lifecycle."
         action={
           hasStore && (
-            <Button
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexShrink: 0 }}>
+              <RealtimeStatus status={connection} />
+              <SoundToggle enabled={isSoundEnabled} onToggle={toggleSound} />
+              <Button
               variant="outlined"
               size="small"
               onClick={refresh}
@@ -78,7 +88,8 @@ export default function OrdersBoard() {
               }
             >
               Refresh
-            </Button>
+              </Button>
+            </Stack>
           )
         }
       />
@@ -112,6 +123,8 @@ export default function OrdersBoard() {
                   }
                   canDrag={canDrag}
                   isPending={isMovePending}
+                  isNew={isNewOrder}
+                  onCardAcknowledge={acknowledgeNewOrder}
                   onCardDragStart={setDraggedOrder}
                   onCardDragEnd={() => setDraggedOrder(null)}
                   onDrop={handleDrop}

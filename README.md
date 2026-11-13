@@ -122,11 +122,13 @@ src/
 │
 ├── lib/
 │   ├── api/        httpClient (interceptors) · apiError · media
+│   ├── audio/      chime
 │   ├── auth/       tokenStorage
 │   ├── config/     env
 │   ├── format/     currency
 │   ├── hooks/      useAsyncData · useAsyncAction
-│   └── maps/       geocode
+│   ├── maps/       geocode
+│   └── realtime/   emitterConnection (MQTT) · sharedConnection
 │
 └── test/           renderWithProviders and other test helpers
 ```

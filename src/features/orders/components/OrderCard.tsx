@@ -4,6 +4,7 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -18,6 +19,10 @@ interface OrderCardProps {
   draggable: boolean;
   /** A move of this order is waiting for the API. */
   pending?: boolean;
+  /** Arrived while the board was open and has not been looked at yet. */
+  isNew?: boolean;
+  /** The store clicked or picked up a new order. */
+  onAcknowledge?: (order: Order) => void;
   onDragStart: (order: Order) => void;
   onDragEnd: () => void;
 }
@@ -27,6 +32,8 @@ export default function OrderCard({
   order,
   draggable,
   pending = false,
+  isNew = false,
+  onAcknowledge,
   onDragStart,
   onDragEnd,
 }: OrderCardProps) {
@@ -34,6 +41,7 @@ export default function OrderCard({
     // Firefox will not start a drag unless some data is set.
     event.dataTransfer.setData("text/plain", String(order.id));
     event.dataTransfer.effectAllowed = "move";
+    if (isNew) onAcknowledge?.(order);
     onDragStart(order);
   };
 
@@ -46,18 +54,26 @@ export default function OrderCard({
       onDragStart={draggable ? handleDragStart : undefined}
       onDragEnd={onDragEnd}
       aria-busy={pending}
+      onClick={isNew ? () => onAcknowledge?.(order) : undefined}
       sx={{
         cursor: draggable ? "grab" : "default",
         flexShrink: 0,
         opacity: pending ? 0.6 : 1,
-        transition: "opacity 120ms",
+        transition: "opacity 120ms, border-color 300ms, box-shadow 300ms",
+        ...(isNew && {
+          borderColor: "warning.main",
+          boxShadow: (theme) => `0 0 0 2px ${(theme.vars || theme).palette.warning.main}`,
+        }),
       }}
     >
       <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
         <Stack direction="row" sx={{ justifyContent: "space-between", mb: 1 }}>
-          <Typography variant="subtitle2" component="h3">
-            #{order.order_number}
-          </Typography>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Typography variant="subtitle2" component="h3">
+              #{order.order_number}
+            </Typography>
+            {isNew && <Chip size="small" color="warning" label="New" />}
+          </Stack>
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
             {formatOrderTime(order.created_at)}
           </Typography>
