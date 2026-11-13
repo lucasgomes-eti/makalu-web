@@ -18,6 +18,12 @@ vi.mock("../api/ordersApi", () => ({
   updateOrderStatus: vi.fn(),
 }));
 
+// Live updates have their own tests (OrdersBoard.realtime.test.tsx); here the
+// connection simply never comes up.
+vi.mock("@/lib/realtime/emitterConnection", () => ({
+  openEmitterConnection: vi.fn(() => ({ close: vi.fn() })),
+}));
+
 let selectedStoreId: number | null = 7;
 vi.mock("@/features/stores/context/SelectedStoreProvider", () => ({
   useSelectedStore: () => ({ selectedStoreId }),
