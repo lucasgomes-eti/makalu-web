@@ -24,6 +24,8 @@ interface OrderColumnProps {
   acceptsDrop: boolean;
   canDrag: (order: Order) => boolean;
   isPending: (order: Order) => boolean;
+  isNew: (order: Order) => boolean;
+  onCardAcknowledge: (order: Order) => void;
   onCardDragStart: (order: Order) => void;
   onCardDragEnd: () => void;
   onDrop: (status: OrderStatus) => void;
@@ -36,6 +38,8 @@ export default function OrderColumn({
   acceptsDrop,
   canDrag,
   isPending,
+  isNew,
+  onCardAcknowledge,
   onCardDragStart,
   onCardDragEnd,
   onDrop,
@@ -100,6 +104,8 @@ export default function OrderColumn({
             order={order}
             draggable={canDrag(order)}
             pending={isPending(order)}
+            isNew={isNew(order)}
+            onAcknowledge={onCardAcknowledge}
             onDragStart={onCardDragStart}
             onDragEnd={onCardDragEnd}
           />
