@@ -19,9 +19,7 @@ interface OrderCardProps {
   draggable: boolean;
   /** A move of this order is waiting for the API. */
   pending?: boolean;
-  /** Arrived while the board was open and has not been looked at yet. */
   isNew?: boolean;
-  /** The store clicked or picked up a new order. */
   onAcknowledge?: (order: Order) => void;
   onDragStart: (order: Order) => void;
   onDragEnd: () => void;

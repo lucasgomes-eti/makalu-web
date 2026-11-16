@@ -29,7 +29,6 @@ interface LocalMoves {
 }
 
 interface StoreScoped<T> {
-  /** The store these belong to; switching store discards them. */
   storeId: number | null;
   value: T;
 }
@@ -42,16 +41,12 @@ const NO_IDS: ReadonlySet<number> = new Set();
 const STALE_BOARD_STATUSES = [400, 404];
 
 /**
- * Use cases: *see the selected store's orders as a board*, *refresh it*, *move an
- * order to another status*, and *see orders arrive and change live*.
+ * Use cases: *see the selected store's orders as a board*, *refresh it*, and *move
+ * an order to another status*.
  *
  * A move shows at once and is sent to the API; the order the API returns replaces
  * it, and a rejected move is rolled back. A refresh (or switching store) shows the
  * server's statuses again.
- *
- * Realtime events are hints layered over the last fetch, never a second source of
- * truth: a status change is shown from the event, a new order makes the board
- * refetch, and so does every (re)connect, because events may have been missed.
  */
 export function useOrderBoard() {
   const { selectedStoreId } = useSelectedStore();
@@ -77,47 +72,43 @@ export function useOrderBoard() {
   const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(new Set());
   const moved = moves.basis === orders.data ? moves.orders : NO_MOVES;
 
-  // Status changes reported by events, kept apart from the fetch they arrived after:
-  // a fetch that was already in flight may come back older than the event.
-  const [remote, setRemote] = useState<StoreScoped<Record<number, RemoteChange>>>({
+  const [statusChangesFromEvents, setStatusChangesFromEvents] = useState<StoreScoped<Record<number, RemoteChange>>>({
     storeId: selectedStoreId,
     value: NO_CHANGES,
   });
-  const remoteChanges = remote.storeId === selectedStoreId ? remote.value : NO_CHANGES;
-  const [arrivals, setArrivals] = useState<StoreScoped<ReadonlySet<number>>>({
+  const statusChangesFromEventsForThisStore = statusChangesFromEvents.storeId === selectedStoreId ? statusChangesFromEvents.value : NO_CHANGES;
+  const [unacknowledgedArrivals, setUnacknowledgedArrivals] = useState<StoreScoped<ReadonlySet<number>>>({
     storeId: selectedStoreId,
     value: NO_IDS,
   });
-  const newOrderIds = arrivals.storeId === selectedStoreId ? arrivals.value : NO_IDS;
+  const newOrderIds = unacknowledgedArrivals.storeId === selectedStoreId ? unacknowledgedArrivals.value : NO_IDS;
 
-  /** Every order as the board shows it: a move in progress wins, then whatever is newest. */
   const shownOrders = useMemo(
     () =>
       (orders.data?.orders ?? []).map((order) =>
         pendingIds.has(order.id) && moved[order.id]
           ? moved[order.id]
-          : withRemoteChange(moved[order.id] ?? order, remoteChanges[order.id]),
+          : withRemoteChange(moved[order.id] ?? order, statusChangesFromEventsForThisStore[order.id]),
       ),
-    [orders.data, moved, pendingIds, remoteChanges],
+    [orders.data, moved, pendingIds, statusChangesFromEventsForThisStore],
   );
 
   const columns = useMemo(() => groupOrdersByStatus(shownOrders), [shownOrders]);
 
   const sound = useNewOrderSound();
   const { play: playNewOrderSound } = sound;
-  // Events arrive outside React's render cycle and must see the board as it is now.
-  const shownOrdersRef = useRef(shownOrders);
+  const ordersOnTheBoardRightNow = useRef(shownOrders);
   useEffect(() => {
-    shownOrdersRef.current = shownOrders;
+    ordersOnTheBoardRightNow.current = shownOrders;
   });
 
-  const handleEvent = useCallback(
+  const applyEventOrRefetch = useCallback(
     (event: OrderEvent) => {
-      const shown = shownOrdersRef.current.find((order) => order.id === event.orderId);
+      const shown = ordersOnTheBoardRightNow.current.find((order) => order.id === event.orderId);
       const outcome = resolveOrderEvent(shown, event);
 
       if (outcome.kind === "apply") {
-        setRemote((previous) => ({
+        setStatusChangesFromEvents((previous) => ({
           storeId: event.storeId,
           value: {
             ...(previous.storeId === event.storeId ? previous.value : NO_CHANGES),
@@ -126,7 +117,7 @@ export function useOrderBoard() {
         }));
       } else if (outcome.kind === "refetch") {
         if (outcome.isNewOrder) {
-          setArrivals((previous) => ({
+          setUnacknowledgedArrivals((previous) => ({
             storeId: event.storeId,
             value: new Set([
               ...(previous.storeId === event.storeId ? previous.value : NO_IDS),
@@ -142,12 +133,12 @@ export function useOrderBoard() {
   );
 
   const connection = useStoreOrdersRealtime(selectedStoreId, {
-    onEvent: handleEvent,
+    onEvent: applyEventOrRefetch,
     onOutOfSync: reload,
   });
 
   const acknowledgeNewOrder = useCallback((order: Order) => {
-    setArrivals((previous) => {
+    setUnacknowledgedArrivals((previous) => {
       if (!previous.value.has(order.id)) return previous;
       const value = new Set(previous.value);
       value.delete(order.id);
@@ -155,7 +146,6 @@ export function useOrderBoard() {
     });
   }, []);
 
-  /** Just arrived and not yet dealt with: still pending and not acknowledged. */
   const isNewOrder = useCallback(
     (order: Order) => order.status === "PENDING" && newOrderIds.has(order.id),
     [newOrderIds],
@@ -163,7 +153,7 @@ export function useOrderBoard() {
 
   const moveOrder = useCallback(
     async (order: Order, to: OrderStatus) => {
-      if (!canMoveOrder(order.status, to) || pendingIds.has(order.id)) return;
+      if (!canMoveOrder(order, to) || pendingIds.has(order.id)) return;
 
       const basis = orders.data;
       setMoves((previous) => ({
@@ -222,12 +212,9 @@ export function useOrderBoard() {
     moveOrder,
     /** A move of this order is waiting for the API. */
     isMovePending,
-    /** The order arrived while the board was open and has not been looked at. */
     isNewOrder,
     acknowledgeNewOrder,
-    /** Whether the board is receiving live updates. */
     connection,
-    /** The new-order sound: whether it is on, and the switch for it. */
     isSoundEnabled: sound.enabled,
     toggleSound: sound.toggle,
     /** Why the last move was rejected; the order is back where it was. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { order, orderItem } from "@/test/orders";
+import { OrderStatus } from "./order.types";
 import {
   canMoveOrder,
   describeItemConfigurations,
@@ -8,33 +9,50 @@ import {
 } from "./orderBoard";
 
 describe("canMoveOrder", () => {
+  const now = new Date("2026-09-30T12:00:00Z");
+  const hoursAgo = (hours: number) =>
+    new Date(now.getTime() - hours * 3_600_000).toISOString();
+  const canMove = (from: OrderStatus, to: OrderStatus, lastChangedHoursAgo = 0) =>
+    canMoveOrder({ status: from, updated_at: hoursAgo(lastChangedHoursAgo) }, to, now);
+
   it("lets a pending order be accepted or cancelled", () => {
-    expect(canMoveOrder("PENDING", "ACCEPTED")).toBe(true);
-    expect(canMoveOrder("PENDING", "CANCELLED")).toBe(true);
+    expect(canMove("PENDING", "ACCEPTED")).toBe(true);
+    expect(canMove("PENDING", "CANCELLED")).toBe(true);
   });
 
   it("sends an accepted order out for delivery", () => {
-    expect(canMoveOrder("ACCEPTED", "IN_ROUTE")).toBe(true);
+    expect(canMove("ACCEPTED", "IN_ROUTE")).toBe(true);
   });
 
   it("lets an order be cancelled until it is delivered", () => {
-    expect(canMoveOrder("ACCEPTED", "CANCELLED")).toBe(true);
-    expect(canMoveOrder("IN_ROUTE", "CANCELLED")).toBe(true);
+    expect(canMove("ACCEPTED", "CANCELLED")).toBe(true);
+    expect(canMove("IN_ROUTE", "CANCELLED")).toBe(true);
   });
 
   it("does not skip steps or go backwards", () => {
-    expect(canMoveOrder("PENDING", "IN_ROUTE")).toBe(false);
-    expect(canMoveOrder("ACCEPTED", "PENDING")).toBe(false);
-    expect(canMoveOrder("IN_ROUTE", "ACCEPTED")).toBe(false);
+    expect(canMove("PENDING", "IN_ROUTE")).toBe(false);
+    expect(canMove("ACCEPTED", "PENDING")).toBe(false);
+    expect(canMove("IN_ROUTE", "ACCEPTED")).toBe(false);
   });
 
-  it("leaves finishing to the customer", () => {
-    expect(canMoveOrder("IN_ROUTE", "FINISHED")).toBe(false);
+  it("leaves finishing to the customer while the order is fresh", () => {
+    expect(canMove("IN_ROUTE", "FINISHED")).toBe(false);
+    expect(canMove("IN_ROUTE", "FINISHED", 11.9)).toBe(false);
+  });
+
+  it("lets the manager finish an order left in route for twelve hours", () => {
+    expect(canMove("IN_ROUTE", "FINISHED", 12)).toBe(true);
+    expect(canMove("IN_ROUTE", "FINISHED", 48)).toBe(true);
+  });
+
+  it("never lets the manager finish an order that is not in route, however old", () => {
+    expect(canMove("PENDING", "FINISHED", 48)).toBe(false);
+    expect(canMove("ACCEPTED", "FINISHED", 48)).toBe(false);
   });
 
   it("treats finished and cancelled orders as final", () => {
-    expect(canMoveOrder("FINISHED", "PENDING")).toBe(false);
-    expect(canMoveOrder("CANCELLED", "PENDING")).toBe(false);
+    expect(canMove("FINISHED", "PENDING", 48)).toBe(false);
+    expect(canMove("CANCELLED", "PENDING", 48)).toBe(false);
   });
 });
 

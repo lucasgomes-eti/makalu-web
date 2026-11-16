@@ -8,7 +8,6 @@ interface SoundToggleProps {
   onToggle: () => void;
 }
 
-/** Switches the new-order sound. The click is also what lets the browser play it. */
 export default function SoundToggle({ enabled, onToggle }: SoundToggleProps) {
   const label = enabled ? "Mute new order sound" : "Play a sound for new orders";
   return (

@@ -4,9 +4,10 @@ import { Order, ORDER_STATUSES, OrderStatus } from "./order.types";
  * Moves a store manager may make on the board — a subset of what the API allows
  * (`OrderStatus.kt`).
  *
- * The API also accepts `IN_ROUTE → FINISHED`, but finishing is left to the customer
- * when the order arrives, so no column leads to it. `FINISHED` and `CANCELLED` are
- * terminal.
+ * Finishing is the customer's move when the order arrives. The manager may only
+ * finish an order the customer left in route for
+ * {@link HOURS_IN_ROUTE_BEFORE_MANAGER_MAY_FINISH} hours. `FINISHED` and `CANCELLED`
+ * are terminal.
  */
 const MANAGER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ["ACCEPTED", "CANCELLED"],
@@ -16,8 +17,27 @@ const MANAGER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   CANCELLED: [],
 };
 
-export function canMoveOrder(from: OrderStatus, to: OrderStatus): boolean {
-  return MANAGER_TRANSITIONS[from].includes(to);
+export const HOURS_IN_ROUTE_BEFORE_MANAGER_MAY_FINISH = 12;
+const MILLISECONDS_PER_HOUR = 3_600_000;
+
+function wasLeftInRouteByTheCustomer(order: MovableOrder, now: Date): boolean {
+  const hoursSinceLastChange =
+    (now.getTime() - Date.parse(order.updated_at)) / MILLISECONDS_PER_HOUR;
+  return (
+    order.status === "IN_ROUTE" &&
+    hoursSinceLastChange >= HOURS_IN_ROUTE_BEFORE_MANAGER_MAY_FINISH
+  );
+}
+
+type MovableOrder = Pick<Order, "status" | "updated_at">;
+
+export function canMoveOrder(
+  order: MovableOrder,
+  to: OrderStatus,
+  now: Date = new Date(),
+): boolean {
+  if (MANAGER_TRANSITIONS[order.status].includes(to)) return true;
+  return to === "FINISHED" && wasLeftInRouteByTheCustomer(order, now);
 }
 
 export type OrderBoardColumns = Record<OrderStatus, Order[]>;

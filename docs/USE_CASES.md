@@ -100,6 +100,7 @@ Conventions:
 | Confirm before cancelling an order | `OrdersBoard` → `ConfirmDialog` | `components/OrdersBoard.test.tsx` |
 | See a rejected move rolled back, with the reason (board reloads on 400/404) | `useOrderBoard().moveError` | `components/OrdersBoard.test.tsx` |
 | Be stopped from a move the lifecycle does not allow | `canMoveOrder` | `model/orderBoard.test.ts`, `components/OrdersBoard.test.tsx` |
+| Finish an order the customer left in route for twelve hours | `canMoveOrder` | `model/orderBoard.test.ts`, `components/OrdersBoard.test.tsx` |
 | See a new order appear the moment the customer places it, highlighted until looked at | `useOrderBoard` ← `useStoreOrdersRealtime` → `resolveOrderEvent` | `components/OrdersBoard.realtime.test.tsx`, `model/orderEvents.test.ts` |
 | See an order move when its status changes elsewhere (another tab, another person) | `useOrderBoard` → `withRemoteChange` | `components/OrdersBoard.realtime.test.tsx`, `model/orderEvents.test.ts` |
 | Hear a sound for a new order, and mute it | `useNewOrderSound` → `orderSoundPreference` | `components/OrdersBoard.realtime.test.tsx`, `model/orderSoundPreference.test.ts` |
@@ -109,9 +110,10 @@ Conventions:
 **Notes**
 
 - Lifecycle on the board: `PENDING → ACCEPTED | CANCELLED`,
-  `ACCEPTED → IN_ROUTE | CANCELLED`, `IN_ROUTE → CANCELLED`. The API also allows
-  `IN_ROUTE → FINISHED`, but finishing is left to the customer, so the manager cannot
-  drop into it. `FINISHED` and `CANCELLED` are final.
+  `ACCEPTED → IN_ROUTE | CANCELLED`, `IN_ROUTE → CANCELLED`. Finishing
+  (`IN_ROUTE → FINISHED`) is the customer's move; the manager can drop into Finished
+  only once the order has sat in route for twelve hours, counted from its
+  `updated_at`. `FINISHED` and `CANCELLED` are final.
 - Moves go to `PATCH /orders/{orderId}/status`. The card moves at once and is
   replaced by the order the API returns. On failure it moves back and the error is
   shown. A 400 (`MK-706`, the move is not allowed from the current status) or a 404

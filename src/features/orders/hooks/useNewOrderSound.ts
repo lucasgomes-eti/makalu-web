@@ -4,13 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Chime, createChime } from "@/lib/audio/chime";
 import { orderSoundPreference } from "../model/orderSoundPreference";
 
-/**
- * Use cases: *hear when a new order arrives* and *mute that sound*.
- *
- * Browsers only allow audio after the user has interacted with the page. Turning the
- * sound on is such an interaction; when it was left on from an earlier visit, the
- * first click or key press anywhere on the page enables it again.
- */
 export function useNewOrderSound() {
   const [enabled, setEnabled] = useState(false);
   const chime = useRef<Chime | null>(null);
@@ -21,7 +14,6 @@ export function useNewOrderSound() {
   }, []);
 
   useEffect(() => {
-    // The preference lives in the browser, so it can only be read after hydration.
     setEnabled(orderSoundPreference.read());
     return () => {
       chime.current?.close();
@@ -40,13 +32,11 @@ export function useNewOrderSound() {
     };
   }, [enabled, getChime]);
 
-  /** Call from a click: it is the gesture that lets the browser play audio. */
   const toggle = useCallback(() => {
     const next = !enabled;
     setEnabled(next);
     orderSoundPreference.write(next);
     if (next) {
-      // Play it once so the store hears what a new order will sound like.
       void getChime()
         .unlock()
         .then((unlocked) => {

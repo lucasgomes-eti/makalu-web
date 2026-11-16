@@ -20,7 +20,6 @@ vi.mock("../api/ordersApi", () => ({
 }));
 vi.mock("../api/realtimeApi", () => ({ getStoreRealtimeCredentials: vi.fn() }));
 
-/** Stands in for the broker connection: the test plays the broker's part. */
 const broker = vi.hoisted(() => ({
   opened: [] as { options: EmitterConnectionOptions; close: ReturnType<typeof vi.fn> }[],
 }));
@@ -159,7 +158,6 @@ describe("OrdersBoard live updates", () => {
     await renderBoard([]);
 
     await userEvent.click(screen.getByRole("button", { name: "Play a sound for new orders" }));
-    // Turning it on plays it once, from the click the browser requires.
     await waitFor(() => expect(chime.play).toHaveBeenCalledTimes(1));
 
     mockList.mockResolvedValue([order({ id: 2, order_number: "1002" })]);
@@ -236,7 +234,6 @@ describe("OrdersBoard live updates", () => {
     mockUpdate.mockReturnValue(new Promise<Order>((resolve) => (answer = resolve)));
 
     drag(card("1001"), column("Accepted"));
-    // The echo beats the API's answer.
     receive({ type: "order.status_changed", orderId: "1", status: "ACCEPTED" });
     expect(within(column("Accepted")).getAllByRole("article")).toHaveLength(1);
     expect(within(column("Pending")).queryByRole("article")).not.toBeInTheDocument();
@@ -244,7 +241,6 @@ describe("OrdersBoard live updates", () => {
     await act(async () =>
       answer(order({ id: 1, order_number: "1001", status: "ACCEPTED", updated_at: "2026-09-30T12:05:00Z" })),
     );
-    // …and is repeated after it.
     receive({ type: "order.status_changed", orderId: "1", status: "ACCEPTED" });
 
     expect(within(column("Accepted")).getAllByRole("article")).toHaveLength(1);

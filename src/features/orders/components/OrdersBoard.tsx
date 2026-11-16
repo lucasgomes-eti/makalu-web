@@ -62,7 +62,7 @@ export default function OrdersBoard() {
 
   const canDrag = (order: Order) =>
     !isMovePending(order) &&
-    ORDER_STATUSES.some((status) => canMoveOrder(order.status, status));
+    ORDER_STATUSES.some((status) => canMoveOrder(order, status));
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -119,7 +119,7 @@ export default function OrdersBoard() {
                   status={status}
                   orders={columns[status]}
                   acceptsDrop={
-                    draggedOrder !== null && canMoveOrder(draggedOrder.status, status)
+                    draggedOrder !== null && canMoveOrder(draggedOrder, status)
                   }
                   canDrag={canDrag}
                   isPending={isMovePending}
