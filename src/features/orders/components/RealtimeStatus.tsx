@@ -28,7 +28,6 @@ const PRESENTATION: Record<
   },
 };
 
-/** Tells the store whether it can trust the board to update on its own. */
 export default function RealtimeStatus({ status }: { status: ConnectionStatus }) {
   const { label, color, hint } = PRESENTATION[status];
   return (

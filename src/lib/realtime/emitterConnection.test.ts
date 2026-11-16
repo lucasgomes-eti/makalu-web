@@ -9,7 +9,6 @@ import {
 
 type Listener = (...args: unknown[]) => void;
 
-/** A scriptable stand-in for an MQTT.js client. */
 class FakeClient {
   listeners: Record<string, Listener[]> = {};
   subscriptions: string[] = [];
@@ -41,7 +40,6 @@ class FakeClient {
     this.listeners[event]?.forEach((listener) => listener(...args));
   }
 
-  /** The broker accepts the connection and answers the subscribe. */
   accept(qos = 0) {
     this.emit("connect");
     this.subscribeCallback?.(null, [{ qos }]);
@@ -85,7 +83,6 @@ function setup(getCredentials = vi.fn(async () => credentials())) {
   return { clients, statuses, onMessage, onLive, connection, getCredentials };
 }
 
-/** Lets pending promises settle without moving the clock. */
 const settle = () => vi.advanceTimersByTimeAsync(0);
 
 describe("openEmitterConnection", () => {
@@ -212,7 +209,6 @@ describe("openEmitterConnection", () => {
     expect(clients).toHaveLength(1);
     expect(clients[0].ended).toBe(false);
 
-    // The renewed key is what the next reconnect uses.
     clients[0].emit("close");
     await vi.advanceTimersByTimeAsync(1_000);
     clients[1].accept();

@@ -1,12 +1,4 @@
-/**
- * A short two-note chime, synthesised so no audio file has to ship.
- *
- * Browsers keep an `AudioContext` suspended until the user interacts with the page.
- * `unlock()` must therefore be called from a click or key press; `play()` is silent
- * until that has happened.
- */
 export interface Chime {
-  /** Call from a user gesture. Resolves to whether sound can now be played. */
   unlock: () => Promise<boolean>;
   play: () => void;
   close: () => void;

@@ -18,8 +18,6 @@ vi.mock("../api/ordersApi", () => ({
   updateOrderStatus: vi.fn(),
 }));
 
-// Live updates have their own tests (OrdersBoard.realtime.test.tsx); here the
-// connection simply never comes up.
 vi.mock("@/lib/realtime/emitterConnection", () => ({
   openEmitterConnection: vi.fn(() => ({ close: vi.fn() })),
 }));
@@ -304,8 +302,20 @@ describe("OrdersBoard", () => {
     expect(within(column("In route")).queryByRole("article")).not.toBeInTheDocument();
   });
 
-  it("leaves finishing an order to the customer", async () => {
-    mockList.mockResolvedValue([order({ status: "IN_ROUTE" })]);
+  it("lets the manager finish an order the customer left in route for twelve hours", async () => {
+    const thirteenHoursAgo = new Date(Date.now() - 13 * 3_600_000).toISOString();
+    mockList.mockResolvedValue([order({ status: "IN_ROUTE", updated_at: thirteenHoursAgo })]);
+
+    renderWithProviders(<OrdersBoard />);
+    drag(await screen.findByRole("article", { name: "Order 1001" }), column("Finished"));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith(1, "FINISHED"));
+  });
+
+  it("leaves finishing an order to the customer while it is fresh", async () => {
+    mockList.mockResolvedValue([
+      order({ status: "IN_ROUTE", updated_at: new Date().toISOString() }),
+    ]);
 
     renderWithProviders(<OrdersBoard />);
     drag(await screen.findByRole("article", { name: "Order 1001" }), column("Finished"));

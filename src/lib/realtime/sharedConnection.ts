@@ -14,13 +14,6 @@ interface Shared {
 
 const connections = new Map<string, Shared>();
 
-/**
- * Joins the connection identified by `id`, opening it for the first listener and
- * closing it when the last one leaves — so a tab holds one connection per channel
- * however many components listen.
- *
- * Returns the function that leaves.
- */
 export function joinSharedConnection(
   id: string,
   options: Pick<EmitterConnectionOptions, "getCredentials" | "isUnavailable">,
@@ -31,7 +24,6 @@ export function joinSharedConnection(
   if (shared) {
     shared.listeners.add(listener);
     listener.onStatus(shared.status);
-    // A listener joining a live connection missed its `onLive`; it still has to sync.
     if (shared.status === "live") listener.onLive();
   } else {
     const listeners = new Set([listener]);
