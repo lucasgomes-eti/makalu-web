@@ -7,6 +7,7 @@ const opened = vi.hoisted(
 );
 vi.mock("./emitterConnection", () => ({
   openEmitterConnection: (options: EmitterConnectionOptions) => {
+    options.onStatus("connecting");
     const close = vi.fn();
     opened.push({ options, close });
     return { close };
@@ -60,6 +61,17 @@ describe("joinSharedConnection", () => {
     expect(late.onLive).toHaveBeenCalledTimes(1);
     leaveFirst();
     leaveLate();
+  });
+
+  it("survives the connection reporting its status while it is still being opened", () => {
+    const first = listener();
+
+    const leave = joinSharedConnection("f", options, first);
+
+    expect(first.onStatus).toHaveBeenCalledWith("connecting");
+    opened[0].options.onStatus("live");
+    expect(first.onStatus).toHaveBeenLastCalledWith("live");
+    leave();
   });
 
   it("keeps separate connections for separate ids", () => {
