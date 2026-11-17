@@ -14,6 +14,8 @@ interface Shared {
 
 const connections = new Map<string, Shared>();
 
+const NOT_OPENED_YET: EmitterConnection = { close: () => {} };
+
 export function joinSharedConnection(
   id: string,
   options: Pick<EmitterConnectionOptions, "getCredentials" | "isUnavailable">,
@@ -30,16 +32,17 @@ export function joinSharedConnection(
     const created: Shared = {
       status: "connecting",
       listeners,
-      connection: openEmitterConnection({
-        ...options,
-        onMessage: (payload) => listeners.forEach((each) => each.onMessage(payload)),
-        onLive: () => listeners.forEach((each) => each.onLive()),
-        onStatus: (status) => {
-          created.status = status;
-          listeners.forEach((each) => each.onStatus(status));
-        },
-      }),
+      connection: NOT_OPENED_YET,
     };
+    created.connection = openEmitterConnection({
+      ...options,
+      onMessage: (payload) => listeners.forEach((each) => each.onMessage(payload)),
+      onLive: () => listeners.forEach((each) => each.onLive()),
+      onStatus: (status) => {
+        created.status = status;
+        listeners.forEach((each) => each.onStatus(status));
+      },
+    });
     shared = created;
     connections.set(id, created);
   }
